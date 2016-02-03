@@ -10,6 +10,8 @@ This repository provides the firmware for the esp_rgbww_controller board
   - [Ideas](#idea-space)
   - [API ideas](#api-ideas)
 - [Contributing](#contributing)
+- [Useful Links and Sources](#links)
+
 
 
 ## Important Information
@@ -20,44 +22,51 @@ The current functionality is:
 - OTA via webinterface (access via http://rgbww-chipid.local/update) - rgbww-chipd can be obtained by writing down the SSID of the accesspoint
 - Set the LED channels via RGBW or HSV values
 
-The firmware might also be used for the [H801 Wifi Module](http://www.aliexpress.com/item/rgb-strip-WiFi-controller-1-port-control-15-rgb-lights-communicate-with-Android-phone-to-dim/32301423622.html). See [chaozlabs blog](http://chaozlabs.blogspot.de/2015/08/esp8266-in-wild-wifi-led-controller-hack.html) for more information on hacking the H801 Module
-
+<br><br>
 ## Documentation 
 
 ### Installation
 #### Flashing 
 Download latest binary from github and flash to the controller
-
+<br>
 #### OTA Update
 Download latest binary from github, access http://rgbww-chipid.local/update
-__WARNING__ Although unlikely - if anything goes wrong you need a Serial (FTDI) programmer to recover
 
+__WARNING__ If anything goes wrong during the OTA update, you will need to reflash via a serial programmer
+
+<br>
 #### Compiling yourself
-Use arduino IDE (>2.0) and also use the latest [WifiManager library](https://github.com/tzapu/WiFiManager)
-Also include include the latest RGBWWLed Library
+Compiling the current version of the project requires:
+* at least [ESP8266 Arduino Board definitions 2.1-rc2](https://github.com/esp8266/Arduino/#available-versions) 
+* [WifiManager library](https://github.com/tzapu/WiFiManager)
+* Latest RGBWWLed Library 
 
 
-
+<br><br>
 ## Current API
-Color output using RGB, WarmWhite (WW), ColdWhite(WW) 
+Quick overview of available commands
 
 ####RGBWW
-```
-http://rgbww-chipid.local/rgbww?r=RED&g=GREEN&b=BLUE&ww=WARMWHITE&cw=COLDWHITE
-```
-Valid values for RED,GREEN,BLUE,WARMWHITE,COLDWHITE is 0-1023 (10bit PWM steps of the ESP)
+Color output using RGB, WarmWhite (WW), ColdWhite(WW) 
 
+`http://rgbww-chipid.local/rgbww?r=RED&g=GREEN&b=BLUE&ww=WARMWHITE&cw=COLDWHITE`
+
+
+All variables (RED,GREEN,BLUE,WARMWHITE,COLDWHITE) have a value between 0-1023 (10Bit ESP8266 PWM range)
 
 ####HSV
 Color output by sending HSV values
-```
-http://rgbww-chipid.local/hsv?h=HUE&s=SAT&v=VAL
-```
-Valid values for
-HUE 0.0 - 360.0
-SAT,VAL 0 - 100.0
 
+`http://rgbww-chipid.local/hsv?h=HUE&s=SAT&v=VAL`
 
+Valid values
+
+Var | Range
+--- | ---
+HUE | 0.0 - 360.0
+SAT | 0 - 100.0
+VAL | 0 - 100.0
+<br><br><br>
 ## Work in Progress
 ### Changelog
 * 02.02.2016
@@ -66,34 +75,38 @@ Initial commit and README
 ### ToDos
 * ~~Wifi connection portal~~ => [WifiManager](https://github.com/tzapu/WiFiManager)
 * ~~OTA Update~~ => [Arduino OTA ESP Library](https://github.com/esp8266/Arduino/blob/master/doc/ota_updates/ota_updates.md#web-browser)
-* API => for more see [API Ideas]
+* API => see [API ideas](api-ideas)
 * configuration portal 
-* implement LED functions => [Seperate Library Project]
+* RGBWW LED functions => [Seperate Library Project RGBWWLed](https://github.com/patrickjahns/RGBWWLed)
 
 ## Idea Space 
 Some thoughts and ideas for future versions
 
-__configuration portal__
+* __configuration portal__
 
-After the module is successfullt setup and connects to an Wifi Accesspoints, provide a configuration portal that allows to change settings for the module or reset it.
-Settings for change
-- MQTT (ServerIP, PORT etc.)
-- ColorCorrection 
-- Mode of Controller (RGB, RGBWW, RGBCW, RGBWW+CD, WW+CW)
-- reset controller
-- include link to OTA update page
+  After the module is successfullt setup and connects to an Wifi Accesspoints, provide a configuration portal that allows to change settings for the module or reset it.
+  Ideas for Settings
+  - MQTT (ServerIP, PORT etc.)
+  - ColorCorrection 
+  - Mode of Controller (RGB, RGBWW, RGBCW, RGBWW+CD, WW+CW)
+  - reset controller
+  - include link to OTA update page
+<br><br>
+* __communication__
 
-__communication__
+  use mqtt for communication between module and controlling software
+<br><br>
+* __LED controlling__
 
-use mqtt for communication between module and controlling software
+  LED functions will be seperated so library can be reused
+<br><br>
+* __H801 Wifi Module__
 
-__LED controlling__
+  The firmware might also be used for the [H801 Wifi Module](http://www.aliexpress.com/item/rgb-strip-WiFi-controller-1-port-control-15-rgb-lights-communicate-with-Android-phone-to-dim/32301423622.html) - currently untested. See [chaozlabs blog](http://chaozlabs.blogspot.de/2015/08/esp8266-in-wild-wifi-led-controller-hack.html) for more information on hacking the H801 Module. (OTA might not work with H801 - the flash size is unknown to me)
 
-LED functions will be seperated so library can be reused
-
-
+<br><br>
 ### API ideas
-Thoughts on functionality to be provided by api
+The following presents a list with ideas for future API calls
 
 ```
 HSVColor(H,S,V,K,T,L)
@@ -113,14 +126,12 @@ V   | 0.0 - 100.0
 K   | 1000 - 10000
 T   | 0 - 3600
 L   | 0/1
-
-
+<br><br>
 ```
 HSVColor(H,S,V,K,H',S',V',K`,T,L)
 ``` 
 Same principle as above, but this time fade from H,S,V,K to H',S',V',K'
-
-
+<br><br>
 ```
 RGBColor(R,G,B,W,K,T,L)
 ```
@@ -139,43 +150,48 @@ W   | 0 - 255
 K   | 1000 - 10000
 T   | 0 - 3600
 L   | 0/1
-
-
+<br><br>
 ```
 RGBColor(R,G,B,W,R',G',B',W',T,L)
 ```
 Same as above - this time transition from R,G,B,W,K to R',G',B',W',K' 
-
-
+<br><br>
 ```
 effect(effectname)
 ```
 start a pre-programmed effect (i.e. rainbow, disco ...)
-
-
+<br><br>
 ```
 cancleTransition
 ```
 cancel a current transition, stops at the current color
-
+<br><br>
 ```
 setSettings
 ```
 set settings like colorcorrection etc
-
+<br><br>
 ```
 status
 ```
 returns active color values
-
+<br><br>
 ```
 info
 ```
 provide information about controller (firmware, settings, etc...)
-
+<br><br>
 ## Contributing
 
-I highly encourage you to contribute to this project. All ideas, thougts, issues and of course code is welcomed.
+I encourage you to contribute to this project. All ideas, thougts, issues and of course code is welcomed.
 Just fork it and go ahead. Also contributions to the RGBWWLed library are highly welcome
 
 Please be sure to develop in a seperate branch (not master)
+<br><br>
+## Links
+
+- [FHEM Forum](http://forum.fhem.de/)
+- [ESP8266 Arduino Repository](https://github.com/esp8266/Arduino)
+- [ESP8266 WifiManager lib](https://github.com/tzapu/WiFiManager)
+- [ESP8266 MQTT client](https://github.com/knolleary/pubsubclient)
+- [FASTLed library](http://fastled.io/)
