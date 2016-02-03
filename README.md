@@ -36,7 +36,9 @@ __WARNING__ Although unlikely - if anything goes wrong you need a Serial (FTDI) 
 Use arduino IDE (>2.0) and also use the latest [WifiManager library](https://github.com/tzapu/WiFiManager)
 Also include include the latest RGBWWLed Library
 
-### Current API
+
+
+## Current API
 Color output using RGB, WarmWhite (WW), ColdWhite(WW) 
 
 ####RGBWW
@@ -90,7 +92,7 @@ __LED controlling__
 LED functions will be seperated so library can be reused
 
 
-#### API ideas
+### API ideas
 Thoughts on functionality to be provided by api
 
 ```
@@ -101,18 +103,23 @@ T is the duration for transition between the colors (T=0 change instantly).
 Usually the change between two colors is done via the shortest way, by setting L=1 the model will use the longer way
 The starting color is the active color
 
-Valid values:
-H 0.0 - 360.0
-S 0.0 - 100.0
-V 0.0 - 100.0
-K 1000 - 10000
-T 0 - 3600
-L 0/1
+__Valid Values__
+
+Var | Range
+--- | ---
+H   | 0.0 - 360.0
+S   | 0.0 - 100.0
+V   | 0.0 - 100.0
+K   | 1000 - 10000
+T   | 0 - 3600
+L   | 0/1
+
 
 ```
 HSVColor(H,S,V,K,H',S',V',K`,T,L)
 ``` 
 Same principle as above, but this time fade from H,S,V,K to H',S',V',K'
+
 
 ```
 RGBColor(R,G,B,W,K,T,L)
@@ -120,20 +127,24 @@ RGBColor(R,G,B,W,K,T,L)
 Set the current color via the RGB colorspace. Additionally add white(W) and provide the color temperature of white (K)
 T is the duration for transition between the colors (T=0 change instantly).
 Usually the change between two colors is done via the shortest way, by setting L=1 the model will use the longer way
-Valid Values
-R 0 - 255
-G 0 - 255
-B 0 - 255
-W 0 - 255
-K 1000 - 10000
-T 0 - 3600
-L 0/1
+
+__Valid Values__
+
+Var | Range
+--- | ---
+R   | 0 - 255
+G   | 0 - 255
+B   | 0 - 255
+W   | 0 - 255
+K   | 1000 - 10000
+T   | 0 - 3600
+L   | 0/1
+
 
 ```
 RGBColor(R,G,B,W,R',G',B',W',T,L)
 ```
 Same as above - this time transition from R,G,B,W,K to R',G',B',W',K' 
-
 
 
 ```
