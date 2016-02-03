@@ -39,7 +39,7 @@ __WARNING__ If anything goes wrong during the OTA update, you will need to refla
 Compiling the current version of the project requires:
 * at least [ESP8266 Arduino Board definitions 2.1-rc2](https://github.com/esp8266/Arduino/#available-versions) 
 * [WifiManager library](https://github.com/tzapu/WiFiManager)
-* Latest RGBWWLed Library 
+* Latest [RGBWWLed Library](https://github.com/patrickjahns/RGBWWLed)
 
 
 <br><br>
@@ -77,7 +77,7 @@ Initial commit and README
 * ~~OTA Update~~ => [Arduino OTA ESP Library](https://github.com/esp8266/Arduino/blob/master/doc/ota_updates/ota_updates.md#web-browser)
 * API => see [API ideas](api-ideas)
 * configuration portal 
-* RGBWW LED functions => [Seperate Library Project RGBWWLed](https://github.com/patrickjahns/RGBWWLed)
+* RGBWW LED functions => see seperate project [RGBWWLed Library](https://github.com/patrickjahns/RGBWWLed)
 
 ## Idea Space 
 Some thoughts and ideas for future versions
@@ -194,4 +194,4 @@ Please be sure to develop in a seperate branch (not master)
 - [ESP8266 Arduino Repository](https://github.com/esp8266/Arduino)
 - [ESP8266 WifiManager lib](https://github.com/tzapu/WiFiManager)
 - [ESP8266 MQTT client](https://github.com/knolleary/pubsubclient)
-- [FASTLed library](http://fastled.io/)
+- [RGBWWLed Library](https://github.com/patrickjahns/RGBWWLed)
