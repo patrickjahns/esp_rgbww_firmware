@@ -15,88 +15,149 @@
 #define BLUEPIN 14
 #define GREENPIN 12
 #define REDPIN 13
-
 #define WWPIN 5
 #define CWPIN 4
 
-ESP8266WebServer httpServer(80);
+std::unique_ptr<ESP8266WebServer> server;
 ESP8266HTTPUpdateServer httpUpdater;
 WiFiManager wifiManager;
 RGBWWLed rgbled;
 
-int rgb[3];
-int rgbw[5];
-float hue;
-float sat;
-float val;
+//global vars
+int inputvoltage;
+unsigned long previousMillis = 0;       
+const long interval = 5000;  
 
-void updatePWM() {
-    analogWrite(REDPIN, rgbw[0]);
-    analogWrite(GREENPIN, rgbw[1]);
-    analogWrite(BLUEPIN, rgbw[2]);
-    analogWrite(WWPIN, rgbw[3]);
-    analogWrite(CWPIN, rgbw[4]); 
-}
 
 void handleRGBWW(){
-  Serial.println("RGB request");
-  if (httpServer.hasArg("r")){
-    rgbw[0] = httpServer.arg("r").toInt();
+  int rgbw[5];
+  Serial.println(F("RGB request"));
+  if (server->hasArg("r")){
+    rgbw[0] = server->arg("r").toInt();
   }
-  if (httpServer.hasArg("g")){
-    rgbw[1] = httpServer.arg("g").toInt();
+  if (server->hasArg("g")){
+    rgbw[1] = server->arg("g").toInt();
   }
-  if (httpServer.hasArg("b")){
-    rgbw[2] = httpServer.arg("b").toInt();
+  if (server->hasArg("b")){
+    rgbw[2] = server->arg("b").toInt();
   }
-  if (httpServer.hasArg("ww")){
-    rgbw[3] = httpServer.arg("ww").toInt();
+  if (server->hasArg("ww")){
+    rgbw[3] = server->arg("ww").toInt();
   }
-  if (httpServer.hasArg("cw")){
-    rgbw[4] = httpServer.arg("cw").toInt();
+  if (server->hasArg("cw")){
+    rgbw[4] = server->arg("cw").toInt();
   }
-  updatePWM();
-  httpServer.send(200, "text/plain", "ok");
+  rgbled.setOutputRaw( rgbw[0], rgbw[1], rgbw[2], rgbw[3], rgbw[4]);
+  server->send(200, "text/plain", "ok");
 }
 
 void handleHSV() {
-  Serial.println("HSV request");
-  if (httpServer.hasArg("h")){
-    hue = httpServer.arg("h").toFloat();
+  float hue, sat , val;
+  Serial.println(F("HSV request"));
+  if (server->hasArg("h") && server->hasArg("s") && server->hasArg("v")){
+    hue = server->arg("h").toFloat();
+    sat = server->arg("s").toFloat();
+    val = server->arg("v").toFloat();
+    rgbled.setOutput(HSV(hue, sat, val));
+    server->send(200, "text/plain", "ok");
+    
+  } else {
+  
+    server->send(200, "text/plain", "missing params");
   }
-  if (httpServer.hasArg("s")){
-    sat = httpServer.arg("s").toFloat();
+}
+
+void handleHSVtransition() {
+  float hue, sat , val;
+  int tm;
+  bool shortway = true;
+  Serial.println(F("HSV transition request"));
+  if (server->hasArg("h") && server->hasArg("s") && server->hasArg("v")){
+    hue = server->arg("h").toFloat();
+    sat = server->arg("s").toFloat();
+    val = server->arg("v").toFloat();
+    HSV color(hue, sat, val);
+    if (server->hasArg("l")) {
+      shortway = false;
+    }
+    if (server->hasArg("tm")) {
+      DEBUG("with time");
+      tm = server->arg("tm").toInt();
+      server->send(200, "text/plain", "ok");
+      
+      rgbled.setHSV(color, tm, shortway);
+    } else {
+      server->send(200, "text/plain", "ok");
+      rgbled.setHSV(color);
+    } 
+  } else {
+  
+    server->send(200, "text/plain", "missing param");
   }
-  if (httpServer.hasArg("v")){
-    val = httpServer.arg("v").toFloat();
+  
+}
+
+void resetWifiManager() {
+  
+  server->send(200, "text/plain", "ok");
+  wifiManager.resetSettings();
+  delay(3000);
+  ESP.reset();
+  delay(2000);
+  
+}
+
+void handleswitchMode() {
+  Serial.println(F("switchmode request"));
+  if (server->hasArg("rgb")){
+    rgbled.setMode(MODE_RGB);    
+  } else {
+    rgbled.setMode(MODE_RGBWW);
   }
-  rgbled.HSVtoRGB(hue,sat,val, rgb);
-  rgbw[0]=rgb[0];
-  rgbw[1]=rgb[1];
-  rgbw[2]=rgb[2];
-  updatePWM();
-  httpServer.send(200, "text/plain", "ok");
+  server->send(200, "text/plain", "ok");
 }
 
 
+void checkVoltage() {
+unsigned long currentMillis = millis();
+ 
+  if(currentMillis - previousMillis >= interval) {
+    // save the last time you read the sensor 
+    previousMillis = currentMillis;   
+ 
+    inputvoltage = analogRead(A0);
+    //Serial.println(inputvoltage);
+  }
+  
+}
+
+void checkRAM() {
+unsigned long currentMillis = millis();
+ 
+  if(currentMillis - previousMillis >= interval) {
+    // save the last time you read the sensor 
+    previousMillis = currentMillis;   
+    Serial.print(F("Free Ram:   "));
+    Serial.println(ESP.getFreeHeap());
+  }
+
+}
+
 
 void setup() {
-    //Output config
-    pinMode(REDPIN, OUTPUT);
-    pinMode(GREENPIN, OUTPUT);
-    pinMode(BLUEPIN, OUTPUT);
-    pinMode(WWPIN, OUTPUT);
-    pinMode(CWPIN, OUTPUT); 
-	
-	  //Hostname that will be used for AP and mdns
-	  String hostname(HOSTNAMEPREFIX);
-    hostname += String(ESP.getChipId());
-
     //Serial
     Serial.begin(115200);
     Serial.println(F("Booting"));
-    
+   
+    //Hostname that will be used for AP and mdns
+	  String hostname(HOSTNAMEPREFIX);
+    hostname += String(ESP.getChipId());
+
     //WiFiManager
+    //reset settings - for testing
+    //wifiManager.resetSettings();
+    
+    //wifiManager.setSaveConfigCallback(saveConfigCallback);
     wifiManager.autoConnect(hostname.c_str());
 
     //mdns
@@ -106,26 +167,40 @@ void setup() {
         delay(1000);
         }
     }
-    
-    //OTA
-    httpUpdater.setup(&httpServer);
 
     //Init Webserver
-    httpServer.on("/rgbww", handleRGBWW);
-    httpServer.on("/hsv", handleHSV);
-    httpServer.begin();
-
+    //reset std unique ptr
+    server.reset(new ESP8266WebServer(WiFi.localIP(), 80));
+    server->on("/rgbww", handleRGBWW);
+    server->on("/hsv", handleHSV);
+    server->on("/hsvt", handleHSVtransition);
+    server->on("/mode", handleswitchMode);
+    server->on("/rst", resetWifiManager); 
+    
+    server->begin();
+    
     MDNS.addService("http", "tcp", 80);
-    Serial.println(F("RGBWW Controller ready"));
+    
+     //OTA
+    httpUpdater.setup(server.get()); 
     Serial.print(F("Update via http://"));
     Serial.print(hostname);
     Serial.println(F(".local/update"));
+
+    
+    //Init RGBLED
+    rgbled.init(REDPIN, GREENPIN, BLUEPIN, WWPIN, CWPIN);
+    Serial.println(F("RGBWW Controller ready"));
 
 }
 
 
 void loop() {
-    httpServer.handleClient();
-    delay(1);  
-    
+
+    server->handleClient();
+    rgbled.show();
+    checkRAM();
+    //checkVoltage();
+    //short break for esp to catch up
+    delay(1);
 }
