@@ -1,6 +1,6 @@
 # Firmware for the RGBWW Fhem controller
 
-This repository provides the firmware for the esp_rgbww_controller board 
+This repository provides the firmware for the esp_rgbww_controller board
 
 - [Documentation](#documentation)
   - [Installation](#installation)
@@ -15,7 +15,7 @@ This repository provides the firmware for the esp_rgbww_controller board
 
 
 ## Important Information
-The Firmware is a work in progress and the current arduino sketch ist just to test/demo the basic functions while providing a common starting point for joined development. Most of the ideas have been summarized from a discussion at the [FHEM Forum (German)](http://forum.fhem.de/index.php/topic,34464.0.html)
+The Firmware is a work in progress and the current arduino sketch is just to test/demo the basic functions while providing a common starting point for joined development. Most of the ideas have been summarized from a discussion at the [FHEM Forum (German)](http://forum.fhem.de/index.php/topic,34464.0.html)
 
 The current functionality is:
 - Create Wifi Accesspoint (SSID: rgbww-chipd) if no configuration for Wifi or the ESP cant connect to the last know network
@@ -23,10 +23,10 @@ The current functionality is:
 - Set the LED channels via RGBW or HSV values
 
 <br><br>
-## Documentation 
+## Documentation
 
 ### Installation
-#### Flashing 
+#### Flashing
 Download latest binary from github and flash to the controller
 <br>
 #### OTA Update
@@ -37,7 +37,7 @@ __WARNING__ If anything goes wrong during the OTA update, you will need to refla
 <br>
 #### Compiling yourself
 Compiling the current version of the project requires:
-* at least [ESP8266 Arduino Board definitions 2.1-rc2](https://github.com/esp8266/Arduino/#available-versions) 
+* at least [ESP8266 Arduino Board definitions 2.1-rc2](https://github.com/esp8266/Arduino/#available-versions)
 * [WifiManager library](https://github.com/tzapu/WiFiManager)
 * Latest [RGBWWLed Library](https://github.com/patrickjahns/RGBWWLed)
 
@@ -47,7 +47,7 @@ Compiling the current version of the project requires:
 Quick overview of available commands
 
 ####RGBWW
-Color output using RGB, WarmWhite (WW), ColdWhite(WW) 
+Color output using RGB, WarmWhite (WW), ColdWhite(CW)
 
 `http://rgbww-chipid.local/rgbww?r=RED&g=GREEN&b=BLUE&ww=WARMWHITE&cw=COLDWHITE`
 
@@ -76,19 +76,19 @@ Initial commit and README
 * ~~Wifi connection portal~~ => [WifiManager](https://github.com/tzapu/WiFiManager)
 * ~~OTA Update~~ => [Arduino OTA ESP Library](https://github.com/esp8266/Arduino/blob/master/doc/ota_updates/ota_updates.md#web-browser)
 * API => see [API ideas](api-ideas)
-* configuration portal 
-* RGBWW LED functions => see seperate project [RGBWWLed Library](https://github.com/patrickjahns/RGBWWLed)
+* configuration portal
+* RGBWW LED functions => see separate project [RGBWWLed Library](https://github.com/patrickjahns/RGBWWLed)
 
-## Idea Space 
+## Idea Space
 Some thoughts and ideas for future versions
 
 * __configuration portal__
 
-  After the module is successfullt setup and connects to an Wifi Accesspoints, provide a configuration portal that allows to change settings for the module or reset it.
+  After the successful module setup and connection to an Wifi Accesspoint, it provides a configuration portal that allows to change settings for the module or reset it.
   Ideas for Settings
   - MQTT (ServerIP, PORT etc.)
-  - ColorCorrection 
-  - Mode of Controller (RGB, RGBWW, RGBCW, RGBWW+CD, WW+CW)
+  - Color correction
+  - Mode of controller (RGB, RGBWW, RGBCW, RGBWW+CW, WW+CW)
   - reset controller
   - include link to OTA update page
 <br><br>
@@ -98,7 +98,7 @@ Some thoughts and ideas for future versions
 <br><br>
 * __LED controlling__
 
-  LED functions will be seperated so library can be reused
+  LED functions will be separated so library can be reused
 <br><br>
 * __H801 Wifi Module__
 
@@ -112,7 +112,7 @@ The following presents a list with ideas for future API calls
 HSVColor(H,S,V,K,T,L)
 ```
 Provide a color via using the HSV model. Additionally add K(Kelvin) as parameter to define the temperature of white
-T is the duration for transition between the colors (T=0 change instantly). 
+T is the duration for transition between the colors (T=0 change instantly).
 Usually the change between two colors is done via the shortest way, by setting L=1 the model will use the longer way
 The starting color is the active color
 
@@ -129,7 +129,7 @@ L   | 0/1
 <br><br>
 ```
 HSVColor(H,S,V,K,H',S',V',K`,T,L)
-``` 
+```
 Same principle as above, but this time fade from H,S,V,K to H',S',V',K'
 <br><br>
 ```
@@ -154,7 +154,7 @@ L   | 0/1
 ```
 RGBColor(R,G,B,W,R',G',B',W',T,L)
 ```
-Same as above - this time transition from R,G,B,W,K to R',G',B',W',K' 
+Same as above - this time transition from R,G,B,W,K to R',G',B',W',K'
 <br><br>
 ```
 effect(effectname)
@@ -169,7 +169,7 @@ cancel a current transition, stops at the current color
 ```
 setSettings
 ```
-set settings like colorcorrection etc
+set settings like colorcorrection etc.
 <br><br>
 ```
 status
@@ -183,10 +183,10 @@ provide information about controller (firmware, settings, etc...)
 <br><br>
 ## Contributing
 
-I encourage you to contribute to this project. All ideas, thougts, issues and of course code is welcomed.
+I encourage you to contribute to this project. All ideas, thoughts, issues and of course code is welcomed.
 Just fork it and go ahead. Also contributions to the RGBWWLed library are highly welcome
 
-Please be sure to develop in a seperate branch (not master)
+Please be sure to develop in a separate branch (not master)
 <br><br>
 ## Links
 
