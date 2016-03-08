@@ -84,7 +84,7 @@ Some thoughts and ideas for future versions
 
 * __configuration portal__
 
-  After the successful module setup and connection to an Wifi Accesspoints, it provides a configuration portal that allows to change settings for the module or reset it.
+  After the successful module setup and connection to an Wifi Accesspoint, it provides a configuration portal that allows to change settings for the module or reset it.
   Ideas for Settings
   - MQTT (ServerIP, PORT etc.)
   - Color correction
@@ -98,7 +98,7 @@ Some thoughts and ideas for future versions
 <br><br>
 * __LED controlling__
 
-  LED functions will be seperated so library can be reused
+  LED functions will be separated so library can be reused
 <br><br>
 * __H801 Wifi Module__
 
