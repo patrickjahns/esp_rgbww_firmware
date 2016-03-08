@@ -14,10 +14,18 @@ This repository provides the firmware for the esp_rgbww_controller board
 
 
 
-## Important Information
-The Firmware is a work in progress and the current arduino sketch is just to test/demo the basic functions while providing a common starting point for joined development. Most of the ideas have been summarized from a discussion at the [FHEM Forum (German)](http://forum.fhem.de/index.php/topic,34464.0.html)
+# Important Information
+__The Firmware in this repository is deprecated.__
 
-The current functionality is:
+During development I experienced the PWM implementation of the Arduino ESP framework as not reliable (see [#836] (https://github.com/esp8266/Arduino/issues/836)). It was not possible to use the underlying "HardwarePWM" provided be the espressif SDK (See [#1654](https://github.com/esp8266/Arduino/issues/1654)).
+
+The development of a firmware for the RGBWW Controller board will be continued using the [SMING](https://github.com/SmingHub/Sming) ) framework. Once a preliminary version is available I will updated this README and link to the superseeding GITHUB repository.
+
+
+Until then the README summarizes ideas collected from [FHEM Forum (German)](http://forum.fhem.de/index.php/topic,34464.0.html)
+
+
+The already existing Arduino Sketch provides limited functionality:
 - Create Wifi Accesspoint (SSID: rgbww-chipd) if no configuration for Wifi or the ESP cant connect to the last know network
 - OTA via webinterface (access via http://rgbww-chipid.local/update) - rgbww-chipd can be obtained by writing down the SSID of the accesspoint
 - Set the LED channels via RGBW or HSV values
@@ -39,7 +47,7 @@ __WARNING__ If anything goes wrong during the OTA update, you will need to refla
 Compiling the current version of the project requires:
 * at least [ESP8266 Arduino Board definitions 2.1-rc2](https://github.com/esp8266/Arduino/#available-versions)
 * [WifiManager library](https://github.com/tzapu/WiFiManager)
-* Latest [RGBWWLed Library](https://github.com/patrickjahns/RGBWWLed)
+* [RGBWWLed Library dev-0.2](https://github.com/patrickjahns/RGBWWLed/tree/dev-v0.2)
 
 
 <br><br>
@@ -69,8 +77,10 @@ VAL | 0 - 100.0
 <br><br><br>
 ## Work in Progress
 ### Changelog
+* 08.03.2016
+  Notice that development will switch to SMING framework
 * 02.02.2016
-Initial commit and README
+  Initial commit and README
 
 ### ToDos
 * ~~Wifi connection portal~~ => [WifiManager](https://github.com/tzapu/WiFiManager)
