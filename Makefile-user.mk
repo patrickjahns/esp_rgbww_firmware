@@ -44,7 +44,7 @@ RBOOT_TWO_ROMS  ?= 0
 SPI_SIZE        ?= 4M
 
 ## SPIFFS options
-SPIFF_FILES = web/build
+SPIFF_FILES = webapp
 
 SPIFF_SIZE      ?= 1000000 #~1MB spiffs size
 RBOOT_SPIFFS_0  ?= 0x300000

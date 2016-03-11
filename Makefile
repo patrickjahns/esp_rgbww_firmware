@@ -8,8 +8,9 @@ include ./Makefile-user.mk
 #### GIT VERSION Information ##### 
 GIT_VERSION := $(shell git describe --abbrev=4 --dirty --always --tags)
 GIT_DATE := $(firstword $(shell git --no-pager show --date=short --format="%ad" --name-only))
+FW_VERSION := `cat VERSION`
 
-USER_CFLAGS += -DGITVERSION=\"$(GIT_VERSION)\" -DGITDATE=\"$(GIT_DATE)\"
+USER_CFLAGS += -DGITVERSION=\"$(GIT_VERSION)\" -DGITDATE=\"$(GIT_DATE)\" -DFWVERSION=\"$(FW_VERSION)\" 
 
 # Important parameters check.
 # We need to make sure SMING_HOME and ESP_HOME variables are set.
