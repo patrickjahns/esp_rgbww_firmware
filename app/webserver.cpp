@@ -22,10 +22,19 @@ bool ICACHE_FLASH_ATTR authenticated(HttpRequest &request, HttpResponse &respons
 
     response.authorizationRequired() ; //authenHeader
     response.setHeader("WWW-Authenticate","Basic realm=\"RGBWW Server\"");
-    response.setHeader("401 Wrong credentials", "wrong credentials");
+    response.setHeader("401 wrong credentials", "wrong credentials");
     response.setHeader("Connection","close");
     return false;
 
+}
+
+String apiErrMsg(API_ERR_CODES code) {
+	switch(code) {
+		case API_ERR_CODES::MISSING_PARAM :
+			return String("missing param");
+		default:
+			return String("bad request");
+	}
 }
 
 void onFile(HttpRequest &request, HttpResponse &response)
@@ -65,300 +74,335 @@ void onIndex(HttpRequest &request, HttpResponse &response)
 
 void onConfig(HttpRequest &request, HttpResponse &response)
 {
+	//TODO: more verbose error handling
 	if(!authenticated(request, response)) return;
 	JsonObjectStream* stream = new JsonObjectStream();
-	JsonObject& jdata = stream->getRoot();
-	jdata["success"] = (bool)false;
+	JsonObject& json = stream->getRoot();
 
 	if (request.getRequestMethod() == RequestMethod::POST)
 	{
 		if (request.getBody() == NULL)
 		{
-
-			JsonObject& data = jdata.createNestedObject("data");
-			data["error"] = "not a valid request";
-			debugf("NULL bodyBuf");
-
+			json["error"] = apiErrMsg(API_ERR_CODES::BAD_REQUEST);
+			return;
 		}
 		else
 		{
+			bool error = false;
+			String error_msg = apiErrMsg(API_ERR_CODES::BAD_REQUEST);
 			DynamicJsonBuffer jsonBuffer;
 			JsonObject& root = jsonBuffer.parseObject(request.getBody());
 			//root.prettyPrintTo(Serial);
-			jdata["data"] = "saved";
-			if (root["network"].success()) {
+			bool ip_updated = false;
+			bool color_updated = false;
+			bool ap_updated = false;
+			if (!root.success()) {
+				error = true;
+			} else {
+				if (root["network"].success()) {
 
-				if(root["network"]["connection"].success()) {
-					bool updated = false;
-					if(root["network"]["connection"]["dhcp"].success()) {
+					if(root["network"]["connection"].success()) {
 
-						if(root["network"]["connection"]["dhcp"] != cfg.network.connection.dhcp) {
-							cfg.network.connection.dhcp = root["network"]["connection"]["dhcp"];
-							updated = true;
-						}
-					}
-					if (!cfg.network.connection.dhcp) {
-						//only change if dhcp is off - otherwise ignore
-						IPAddress ip, netmask, gateway;
-						if(root["network"]["connection"]["ip"].success()) {
+						if(root["network"]["connection"]["dhcp"].success()) {
 
-							ip = root["network"]["connection"]["ip"].asString();
-							if(!(ip == cfg.network.connection.ip)) {
-								cfg.network.connection.ip = ip;
-								updated = true;
+							if(root["network"]["connection"]["dhcp"] != cfg.network.connection.dhcp) {
+								cfg.network.connection.dhcp = root["network"]["connection"]["dhcp"];
+								ip_updated = true;
 							}
 						}
-						if(root["network"]["connection"]["netmask"].success()) {
-							netmask = root["network"]["connection"]["netmask"].asString();
-							if(!(netmask == cfg.network.connection.netmask)) {
-								cfg.network.connection.netmask = netmask;
-								updated = true;
-							}
-						}
-						if(root["network"]["connection"]["gateway"].success()) {
-							gateway = root["network"]["connection"]["gateway"].asString();
-							if(!(gateway == cfg.network.connection.gateway)) {
-								cfg.network.connection.gateway = gateway;
-								updated = true;
-							}
-						}
-						if (updated) {
-							if (root["restart"].success()) {
-								if (root["restart"] == true) {
-									systemTimer.initializeMs(3000, restart).startOnce();
-									//TODO: change to be more precise
-									jdata["data"] = "restart";
-									debugf("ip settings changed - rebooting");
+						if (!cfg.network.connection.dhcp) {
+							//only change if dhcp is off - otherwise ignore
+							IPAddress ip, netmask, gateway;
+							if(root["network"]["connection"]["ip"].success()) {
+								ip = root["network"]["connection"]["ip"].asString();
+								if(!(ip == cfg.network.connection.ip)) {
+									cfg.network.connection.ip = ip;
+									ip_updated = true;
 								}
+							} else {
+								error = true;
+								error_msg = "missing ip";
 							}
-						};
-					}
+							if(root["network"]["connection"]["netmask"].success()) {
+								netmask = root["network"]["connection"]["netmask"].asString();
+								if(!(netmask == cfg.network.connection.netmask)) {
+									cfg.network.connection.netmask = netmask;
+									ip_updated = true;
+								}
+							} else {
+								error = true;
+								error_msg = "missing netmask";
+							}
+							if(root["network"]["connection"]["gateway"].success()) {
+								gateway = root["network"]["connection"]["gateway"].asString();
+								if(!(gateway == cfg.network.connection.gateway)) {
+									cfg.network.connection.gateway = gateway;
+									ip_updated = true;
+								}
+							} else {
+								error = true;
+								error_msg = "missing gateway";
+							}
 
-				}
-				if(root["network"]["ap"].success()) {
-					bool updated = false;
-
-					if(root["network"]["ap"]["ssid"].success()) {
-						if (root["network"]["ap"]["ssid"] != cfg.network.ap.ssid) {
-							cfg.network.ap.ssid = root["network"]["ap"]["ssid"].asString();
-							updated = true;
 						}
+
 					}
-					if(root["network"]["ap"]["secured"].success()) {
-							if (root["network"]["ap"]["secured"]){
-								if(root["network"]["ap"]["password"].success()) {
-									if (root["network"]["ap"]["password"] != cfg.network.ap.password) {
-										cfg.network.ap.secured = root["network"]["ap"]["secured"];
-										cfg.network.ap.password = root["network"]["ap"]["password"].asString();
-										updated = true;
+					if(root["network"]["ap"].success()) {
+
+
+						if(root["network"]["ap"]["ssid"].success()) {
+							if (root["network"]["ap"]["ssid"] != cfg.network.ap.ssid) {
+								cfg.network.ap.ssid = root["network"]["ap"]["ssid"].asString();
+								ap_updated = true;
+							}
+						}
+						if(root["network"]["ap"]["secured"].success()) {
+								if (root["network"]["ap"]["secured"]){
+									if(root["network"]["ap"]["password"].success()) {
+										if (root["network"]["ap"]["password"] != cfg.network.ap.password) {
+											cfg.network.ap.secured = root["network"]["ap"]["secured"];
+											cfg.network.ap.password = root["network"]["ap"]["password"].asString();
+											ap_updated = true;
+										}
+									} else {
+										error = true;
+										error_msg = "missing password for securing ap";
 									}
+								} else if (root["network"]["ap"]["secured"] != cfg.network.ap.secured)
+								{
+									root["network"]["ap"]["secured"] == cfg.network.ap.secured;
+									ap_updated = true;
 								}
-							} else if (root["network"]["ap"]["secured"] != cfg.network.ap.secured)
+						}
+
+					}
+					if(root["network"]["mqtt"].success()) {
+						//TODO: what to do if changed?
+
+						if(root["network"]["mqtt"]["enabled"].success()) {
+							if (root["network"]["mqtt"]["enabled"] != cfg.network.mqtt.enabled) {
+								cfg.network.mqtt.enabled = root["network"]["mqtt"]["enabled"];
+							}
+						}
+						if(root["network"]["mqtt"]["server"].success()) {
+							if (root["network"]["mqtt"]["server"] != cfg.network.mqtt.server) {
+								cfg.network.mqtt.server = root["network"]["mqtt"]["server"].asString();
+							}
+						}
+						if(root["network"]["mqtt"]["port"].success()) {
+							if (root["network"]["mqtt"]["port"] != cfg.network.mqtt.port) {
+								cfg.network.mqtt.port = root["network"]["mqtt"]["port"];
+							}
+						}
+						if(root["network"]["mqtt"]["username"].success()) {
+							if (root["network"]["mqtt"]["username"] != cfg.network.mqtt.username) {
+								cfg.network.mqtt.username = root["network"]["mqtt"]["username"].asString();
+							}
+						}
+						if(root["network"]["mqtt"]["password"].success()) {
+							if (root["network"]["mqtt"]["password"] != cfg.network.mqtt.password) {
+								cfg.network.mqtt.password = root["network"]["mqtt"]["password"].asString();
+							}
+						}
+					}
+					if(root["network"]["udpserver"].success()) {
+						//TODO: what to do if changed?
+						if(root["network"]["udpserver"]["enabled"].success()) {
+							if (root["network"]["udpserver"]["enabled"] != cfg.network.udpserver.enabled) {
+								cfg.network.udpserver.enabled = root["network"]["udpserver"]["enabled"];
+							}
+						}
+						if (root["network"]["udpserver"]["port"].success()) {
+							if (root["network"]["udpserver"]["port"] != cfg.network.udpserver.port) {
+								cfg.network.udpserver.port = root["network"]["udpserver"]["port"];
+							}
+						}
+					}
+					if(root["network"]["tcpserver"].success()) {
+						//TODO: what to do if changed?
+						if(root["network"]["tcpserver"]["enabled"].success()) {
+							if (root["network"]["tcpserver"]["enabled"] != cfg.network.tcpserver.enabled) {
+								cfg.network.tcpserver.enabled = root["network"]["tcpserver"]["enabled"];
+							}
+						}
+						if (root["network"]["tcpserver"]["port"].success()) {
+							if (root["network"]["tcpserver"]["port"] != cfg.network.tcpserver.port) {
+								cfg.network.tcpserver.port = root["network"]["tcpserver"]["port"];
+							}
+						}
+					}
+				}
+
+				if (root["color"].success())
+				{
+					//TODO DRY
+					if (root["color"]["hsv"].success()) {
+						if (root["color"]["hsv"]["model"].success()){
+							if (root["color"]["hsv"]["model"] != cfg.color.hsv.model) {
+								cfg.color.hsv.model = root["color"]["hsv"]["model"].as<int>();
+								color_updated = true;
+							}
+						}
+						if (root["color"]["hsv"]["red"].success())
+						{
+							if (root["color"]["hsv"]["red"].as<float>() != cfg.color.hsv.red)
 							{
-								root["network"]["ap"]["secured"] == cfg.network.ap.secured;
-								updated = true;
-							}
-					}
-					if(updated) {
-						if (root["restart"].success()) {
-							if (root["restart"] == true && WifiAccessPoint.isEnabled()) {
-								systemTimer.initializeMs(3000, restart).startOnce();
-								jdata["data"] = "restart";
-								debugf("wifiap settings changed - rebooting");
+								cfg.color.hsv.red = root["color"]["hsv"]["red"].as<float>();
+								color_updated = true;
 							}
 						}
+						if (root["color"]["hsv"]["yellow"].success())
+						{
+							if (root["color"]["hsv"]["yellow"].as<float>() != cfg.color.hsv.yellow)
+							{
+								cfg.color.hsv.yellow = root["color"]["hsv"]["yellow"].as<float>();
+								color_updated = true;
+							}
+						}
+						if (root["color"]["hsv"]["green"].success())
+						{
+							if (root["color"]["hsv"]["green"].as<float>() != cfg.color.hsv.green)
+							{
+								cfg.color.hsv.green = root["color"]["hsv"]["green"].as<float>();
+								color_updated = true;
+							}
+						}
+						if (root["color"]["hsv"]["cyan"].success())
+						{
+							if (root["color"]["hsv"]["cyan"].as<float>() != cfg.color.hsv.cyan)
+							{
+								cfg.color.hsv.cyan = root["color"]["hsv"]["cyan"].as<float>();
+								color_updated = true;
+							}
+						}
+						if (root["color"]["hsv"]["blue"].success())
+						{
+							if (root["color"]["hsv"]["blue"].as<float>() != cfg.color.hsv.blue)
+							{
+								cfg.color.hsv.blue = root["color"]["hsv"]["blue"].as<float>();
+								color_updated = true;
+							}
+						}
+						if (root["color"]["hsv"]["magenta"].success())
+						{
+							if (root["color"]["hsv"]["magenta"].as<float>() != cfg.color.hsv.magenta)
+							{
+								cfg.color.hsv.magenta = root["color"]["hsv"]["magenta"].as<float>();
+								color_updated = true;
+							}
+						}
+					}
+					if (root["color"]["outputmode"].success()) {
+						if(root["color"]["outputmode"] != cfg.color.outputmode) {
+							cfg.color.outputmode = root["color"]["outputmode"].as<int>();
+							color_updated = true;
+						}
+					}
+					if (root["color"]["brightness"].success()) {
+						//TODO DRY
+						if (root["color"]["brightness"]["red"].success()) {
+							if (root["color"]["brightness"]["red"].as<int>() != cfg.color.brightness.red) {
+								cfg.color.brightness.red = root["color"]["brightness"]["red"].as<int>();
+								color_updated = true;
+							}
+						}
+						if (root["color"]["brightness"]["green"].success()) {
+							if (root["color"]["brightness"]["green"].as<int>() != cfg.color.brightness.green) {
+								cfg.color.brightness.green = root["color"]["brightness"]["green"].as<int>();
+								color_updated = true;
+							}
+						}
+						if (root["color"]["brightness"]["blue"].success()) {
+							if (root["color"]["brightness"]["blue"].as<int>() != cfg.color.brightness.blue) {
+								cfg.color.brightness.blue = root["color"]["brightness"]["blue"].as<int>();
+								color_updated = true;
+							}
+						}
+						if (root["color"]["brightness"]["ww"].success()) {
+							if (root["color"]["brightness"]["ww"].as<int>() != cfg.color.brightness.ww) {
+								cfg.color.brightness.ww = root["color"]["brightness"]["ww"].as<int>();
+								color_updated = true;
+							}
+						}
+						if (root["color"]["brightness"]["cw"].success()) {
+							if (root["color"]["brightness"]["cw"].as<int>() != cfg.color.brightness.cw) {
+								cfg.color.brightness.cw = root["color"]["brightness"]["cw"].as<int>();
+								color_updated = true;
+							}
+						}
+					}
+					if (root["color"]["colortemp"].success()) {
+						//TODO: DRY
+						if (root["color"]["colortemp"]["ww"].success()) {
+							if (root["color"]["colortemp"]["cw"].as<int>() != cfg.color.colortemp.ww) {
+								cfg.color.colortemp.ww = root["color"]["colortemp"]["ww"].as<int>();
+								color_updated = true;
+							}
+						}
+						if (root["color"]["colortemp"]["cw"].success()) {
+							if (root["color"]["colortemp"]["cw"].as<int>() != cfg.color.colortemp.cw) {
+								cfg.color.colortemp.cw = root["color"]["colortemp"]["cw"].as<int>();
+								color_updated = true;
+							}
+						}
 					}
 				}
-				if(root["network"]["mqtt"].success()) {
-					//TODO: what to do if changed?
-					if(root["network"]["mqtt"]["enabled"].success()) {
-						if (root["network"]["mqtt"]["enabled"] != cfg.network.mqtt.enabled) {
-							cfg.network.mqtt.enabled = root["network"]["mqtt"]["enabled"];
+
+				if(root["security"].success())
+				{
+					if(root["security"]["settings_secured"].success()){
+						cfg.general.settings_secured = root["security"]["settings_secured"];
+						if (root["security"]["settings_secured"]) {
+							if(root["security"]["settings_password"].success()){
+								if(root["security"]["settings_password"] != cfg.general.settings_password) {
+
+									cfg.general.settings_password = root["security"]["settings_password"].asString();
+								}
+							}
+						} else {
+							error = true;
+							error_msg = "missing password to secure settings";
 						}
 					}
-					if(root["network"]["mqtt"]["server"].success()) {
-						if (root["network"]["mqtt"]["server"] != cfg.network.mqtt.server) {
-							cfg.network.mqtt.server = root["network"]["mqtt"]["server"].asString();
-						}
-					}
-					if(root["network"]["mqtt"]["port"].success()) {
-						if (root["network"]["mqtt"]["port"] != cfg.network.mqtt.port) {
-							cfg.network.mqtt.port = root["network"]["mqtt"]["port"];
-						}
-					}
-					if(root["network"]["mqtt"]["username"].success()) {
-						if (root["network"]["mqtt"]["username"] != cfg.network.mqtt.username) {
-							cfg.network.mqtt.username = root["network"]["mqtt"]["username"].asString();
-						}
-					}
-					if(root["network"]["mqtt"]["password"].success()) {
-						if (root["network"]["mqtt"]["password"] != cfg.network.mqtt.password) {
-							cfg.network.mqtt.password = root["network"]["mqtt"]["password"].asString();
-						}
-					}
-				}
-				if(root["network"]["udpserver"].success()) {
-					//TODO: what to do if changed?
-					if(root["network"]["udpserver"]["enabled"].success()) {
-						if (root["network"]["udpserver"]["enabled"] != cfg.network.udpserver.enabled) {
-							cfg.network.udpserver.enabled = root["network"]["udpserver"]["enabled"];
-						}
-					}
-					if (root["network"]["udpserver"]["port"].success()) {
-						if (root["network"]["udpserver"]["port"] != cfg.network.udpserver.port) {
-							cfg.network.udpserver.port = root["network"]["udpserver"]["port"];
-						}
-					}
-				}
-				if(root["network"]["tcpserver"].success()) {
-					//TODO: what to do if changed?
-					if(root["network"]["tcpserver"]["enabled"].success()) {
-						if (root["network"]["tcpserver"]["enabled"] != cfg.network.tcpserver.enabled) {
-							cfg.network.tcpserver.enabled = root["network"]["tcpserver"]["enabled"];
-						}
-					}
-					if (root["network"]["tcpserver"]["port"].success()) {
-						if (root["network"]["tcpserver"]["port"] != cfg.network.tcpserver.port) {
-							cfg.network.tcpserver.port = root["network"]["tcpserver"]["port"];
-						}
-					}
+
+
 				}
 			}
 
-			if (root["color"].success())
-			{
-				bool updated = false;
-				if (root["color"]["hsv"].success()) {
-					if (root["color"]["hsv"]["model"].success()){
-						if (root["color"]["hsv"]["model"] != cfg.color.hsv.model) {
-							cfg.color.hsv.model = root["color"]["hsv"]["model"].as<int>();
-							updated = true;
+			// update and save settings if we haven`t received any error until now
+			if (!error) {
+				if (ip_updated) {
+					if (root["restart"].success()) {
+						if (root["restart"] == true) {
+							systemTimer.initializeMs(3000, restart).startOnce();
+							//TODO: change to be more precise
+							json["data"] = "restart";
+							debugf("ip settings changed - rebooting");
 						}
 					}
-					if (root["color"]["hsv"]["red"].success())
-					{
-						if (root["color"]["hsv"]["red"].as<float>() != cfg.color.hsv.red)
-						{
-							cfg.color.hsv.red = root["color"]["hsv"]["red"].as<float>();
-							updated = true;
-						}
-					}
-					if (root["color"]["hsv"]["yellow"].success())
-					{
-						if (root["color"]["hsv"]["yellow"].as<float>() != cfg.color.hsv.yellow)
-						{
-							cfg.color.hsv.yellow = root["color"]["hsv"]["yellow"].as<float>();
-							updated = true;
-						}
-					}
-					if (root["color"]["hsv"]["green"].success())
-					{
-						if (root["color"]["hsv"]["green"].as<float>() != cfg.color.hsv.green)
-						{
-							cfg.color.hsv.green = root["color"]["hsv"]["green"].as<float>();
-							updated = true;
-						}
-					}
-					if (root["color"]["hsv"]["cyan"].success())
-					{
-						if (root["color"]["hsv"]["cyan"].as<float>() != cfg.color.hsv.cyan)
-						{
-							cfg.color.hsv.cyan = root["color"]["hsv"]["cyan"].as<float>();
-							updated = true;
-						}
-					}
-					if (root["color"]["hsv"]["blue"].success())
-					{
-						if (root["color"]["hsv"]["blue"].as<float>() != cfg.color.hsv.blue)
-						{
-							cfg.color.hsv.blue = root["color"]["hsv"]["blue"].as<float>();
-							updated = true;
-						}
-					}
-					if (root["color"]["hsv"]["magenta"].success())
-					{
-						if (root["color"]["hsv"]["magenta"].as<float>() != cfg.color.hsv.magenta)
-						{
-							cfg.color.hsv.magenta = root["color"]["hsv"]["magenta"].as<float>();
-							updated = true;
+				};
+				if(ap_updated) {
+					if (root["restart"].success()) {
+						if (root["restart"] == true && WifiAccessPoint.isEnabled()) {
+							systemTimer.initializeMs(3000, restart).startOnce();
+							json["data"] = "restart";
+							debugf("wifiap settings changed - rebooting");
 						}
 					}
 				}
-				if (root["color"]["outputmode"].success()) {
-					if(root["color"]["outputmode"] != cfg.color.outputmode) {
-						cfg.color.outputmode = root["color"]["outputmode"].as<int>();
-						updated = true;
-					}
-				}
-				if (root["color"]["brightness"].success()) {
-					if (root["color"]["brightness"]["red"].success()) {
-						if (root["color"]["brightness"]["red"].as<int>() != cfg.color.brightness.red) {
-							cfg.color.brightness.red = root["color"]["brightness"]["red"].as<int>();
-							updated = true;
-						}
-					}
-					if (root["color"]["brightness"]["green"].success()) {
-						if (root["color"]["brightness"]["green"].as<int>() != cfg.color.brightness.green) {
-							cfg.color.brightness.green = root["color"]["brightness"]["green"].as<int>();
-							updated = true;
-						}
-					}
-					if (root["color"]["brightness"]["blue"].success()) {
-						if (root["color"]["brightness"]["blue"].as<int>() != cfg.color.brightness.blue) {
-							cfg.color.brightness.blue = root["color"]["brightness"]["blue"].as<int>();
-							updated = true;
-						}
-					}
-					if (root["color"]["brightness"]["ww"].success()) {
-						if (root["color"]["brightness"]["ww"].as<int>() != cfg.color.brightness.ww) {
-							cfg.color.brightness.ww = root["color"]["brightness"]["ww"].as<int>();
-							updated = true;
-						}
-					}
-					if (root["color"]["brightness"]["cw"].success()) {
-						if (root["color"]["brightness"]["cw"].as<int>() != cfg.color.brightness.cw) {
-							cfg.color.brightness.cw = root["color"]["brightness"]["cw"].as<int>();
-							updated = true;
-						}
-					}
-				}
-				if (root["color"]["colortemp"].success()) {
-					if (root["color"]["colortemp"]["ww"].success()) {
-						if (root["color"]["colortemp"]["cw"].as<int>() != cfg.color.colortemp.ww) {
-							cfg.color.colortemp.ww = root["color"]["colortemp"]["ww"].as<int>();
-							updated = true;
-						}
-					}
-					if (root["color"]["colortemp"]["cw"].success()) {
-						if (root["color"]["colortemp"]["cw"].as<int>() != cfg.color.colortemp.cw) {
-							cfg.color.colortemp.cw = root["color"]["colortemp"]["cw"].as<int>();
-							updated = true;
-						}
-					}
-				}
-				if (updated) {
+				if (color_updated) {
 					//refresh settings
 					setupRGBWW();
 					//refresh current output
 					rgbwwctrl.refresh();
+					debugf("color settings changed - refreshing");
 				}
-
-
+				cfg.save();
+				json["success"] = (bool)true;
+			} else {
+				json["error"] = error_msg;
 			}
-			if(root["security"].success())
-			{
-				if(root["security"]["settings_secured"].success()){
-					cfg.general.settings_secured = root["security"]["settings_secured"];
-				}
-				if(root["security"]["settings_password"].success()){
-					if(root["security"]["settings_password"] != cfg.general.settings_password) {
-						cfg.general.settings_password = root["security"]["settings_password"].asString();
-					}
-				}
-			}
-			cfg.save();
 
-			jdata["success"] = (bool)true;
 
 		}
 
@@ -366,17 +410,13 @@ void onConfig(HttpRequest &request, HttpResponse &response)
 	} else {
 
 		// returning settings
-		JsonObject& data = jdata.createNestedObject("data");
-		JsonObject& net = data.createNestedObject("network");
+		JsonObject& net = json.createNestedObject("network");
 		JsonObject& con = net.createNestedObject("connection");
-		con["connected"] = WifiStation.isConnected();
-		con["ssid"] = cfg.network.connection.ssid.c_str();
 		con["dhcp"] = WifiStation.isEnabledDHCP();
 		con["ip"] = WifiStation.getIP().toString();
 		con["netmask"] = WifiStation.getNetworkMask().toString();
 		con["gateway"] = WifiStation.getNetworkGateway().toString();
-		con["mac"] = WifiStation.getMAC();
-		con["mdnshostname"] = cfg.network.connection.mdnshostname.c_str();
+		//con["mdnshostname"] = cfg.network.connection.mdnshostname.c_str();
 
 		JsonObject& ap = net.createNestedObject("ap");
 		ap["secured"] = cfg.network.ap.secured;
@@ -397,65 +437,80 @@ void onConfig(HttpRequest &request, HttpResponse &response)
 		tcp["enabled"] = cfg.network.tcpserver.enabled;
 		tcp["port"] = cfg.network.tcpserver.port;
 
-		JsonObject& c = data.createNestedObject("color");
-		c["outputmode"] = cfg.color.outputmode;
+		JsonObject& color = json.createNestedObject("color");
+		color["outputmode"] = cfg.color.outputmode;
 
-		JsonObject& h = c.createNestedObject("hsv");
-		h["model"] = cfg.color.hsv.model;
+		JsonObject& hsv = color.createNestedObject("hsv");
+		hsv["model"] = cfg.color.hsv.model;
 
-		h["red"] = cfg.color.hsv.red;
-		h["yellow"] = cfg.color.hsv.yellow;
-		h["green"] = cfg.color.hsv.green;
-		h["cyan"] = cfg.color.hsv.cyan;
-		h["blue"] = cfg.color.hsv.blue;
-		h["magenta"] = cfg.color.hsv.magenta;
+		hsv["red"] = cfg.color.hsv.red;
+		hsv["yellow"] = cfg.color.hsv.yellow;
+		hsv["green"] = cfg.color.hsv.green;
+		hsv["cyan"] = cfg.color.hsv.cyan;
+		hsv["blue"] = cfg.color.hsv.blue;
+		hsv["magenta"] = cfg.color.hsv.magenta;
 
-		JsonObject& b = c.createNestedObject("brightness");
-		b["red"] = cfg.color.brightness.red;
-		b["green"] = cfg.color.brightness.green;
-		b["blue"] = cfg.color.brightness.blue;
-		b["ww"] = cfg.color.brightness.ww;
-		b["cw"] = cfg.color.brightness.cw;
+		JsonObject& brighntess = color.createNestedObject("brightness");
+		brighntess["red"] = cfg.color.brightness.red;
+		brighntess["green"] = cfg.color.brightness.green;
+		brighntess["blue"] = cfg.color.brightness.blue;
+		brighntess["ww"] = cfg.color.brightness.ww;
+		brighntess["cw"] = cfg.color.brightness.cw;
 
-		JsonObject& ctmp = c.createNestedObject("colortemp");
+		JsonObject& ctmp = color.createNestedObject("colortemp");
 		ctmp["ww"] = cfg.color.colortemp.ww;
 		ctmp["cw"] = cfg.color.colortemp.cw;
 
-		JsonObject& s = data.createNestedObject("security");
+		JsonObject& s = json.createNestedObject("security");
 		s["settings_secured"] = cfg.general.settings_secured;
 
-		JsonObject& i = data.createNestedObject("info");
-		//i["version"] = cfg.appversion;
-		i["config_version"] = cfg.configversion;
-		i["sming"] = SMING_VERSION;
-		i["rgbww"] = RGBWW_VERSION;
-
-		jdata["success"] = (bool)true;
 	}
 	response.setAllowCrossDomainOrigin("*");
 	response.sendJsonObject(stream);
 }
 
+void onInfo(HttpRequest &request, HttpResponse &response)
+{
+	if(!authenticated(request, response)) return;
+	JsonObjectStream* stream = new JsonObjectStream();
+	JsonObject& json = stream->getRoot();
+	JsonObject& data = json.createNestedObject("data");
+	data["deviceid"] = String(system_get_chip_id());
+	data["firmware"] = fw_version;
+	data["config_version"] = cfg.configversion;
+	data["sming"] = SMING_VERSION;
+	data["rgbwwled"] = RGBWW_VERSION;
+	JsonObject& con = data.createNestedObject("connection");
+	con["connected"] = WifiStation.isConnected();
+	con["ssid"] = cfg.network.connection.ssid.c_str();
+	con["dhcp"] = WifiStation.isEnabledDHCP();
+	con["ip"] = WifiStation.getIP().toString();
+	con["netmask"] = WifiStation.getNetworkMask().toString();
+	con["gateway"] = WifiStation.getNetworkGateway().toString();
+	con["mac"] = WifiStation.getMAC();
+	response.setAllowCrossDomainOrigin("*");
+	response.sendJsonObject(stream);
+}
 
 void onColor(HttpRequest &request, HttpResponse &response)
 {
 	if(!authenticated(request, response)) return;
 	JsonObjectStream* stream = new JsonObjectStream();
-	JsonObject& jdata = stream->getRoot();
-	jdata["success"] = (bool)false;
+	JsonObject& json = stream->getRoot();
 	bool error = false;
 	if (request.getRequestMethod() == RequestMethod::POST)
 	{
-		if (request.getBody() == NULL)
+		String body = request.getBody();
+		if ( body == NULL || body.length() > 128)
 		{
-			error = true;
-			debugf("NULL bodyBuf");
+			json["error"] = apiErrMsg(API_ERR_CODES::BAD_REQUEST);
+			return;
 		}
 		else
 		{
 
-			DynamicJsonBuffer jsonBuffer;
-			JsonObject& root = jsonBuffer.parseObject(request.getBody());
+			StaticJsonBuffer<128> jsonBuffer;
+			JsonObject& root = jsonBuffer.parseObject(body);
 			//root.prettyPrintTo(Serial);
 
 			if (root["color"].success()) {
@@ -487,23 +542,24 @@ void onColor(HttpRequest &request, HttpResponse &response)
 					c = HSVK(h, s, v, k);
 					debugf("H %i S %i V %i K %i", c.h, c.s, c.v, c.k);
 					rgbwwctrl.setHSV(c, t, q);
-					jdata["success"] = true;
+
 				} else {
+
 					error = true;
 				}
 			} else {
 				error = true;
 			}
 
+			if (error) {
+				json["error"] = apiErrMsg(API_ERR_CODES::MISSING_PARAM);
+			} else {
+				json["success"] = (bool)true;
+			}
 		}
-		if (error) {
-			JsonObject& data = jdata.createNestedObject("data");
-			data["error"] = "invalid data";
-		}
-
 	}
 	else {
-		JsonObject& data = jdata.createNestedObject("data");
+		JsonObject& data = json.createNestedObject("data");
 		JsonObject& color = data.createNestedObject("color");
 		float h, s, v;
 		int k;
@@ -513,7 +569,7 @@ void onColor(HttpRequest &request, HttpResponse &response)
 		color["s"] = s;
 		color["v"] = v;
 		color["k"] = k;
-		jdata["success"] = true;
+
 	}
 	response.setAllowCrossDomainOrigin("*");
 	response.sendJsonObject(stream);
@@ -522,57 +578,62 @@ void onColor(HttpRequest &request, HttpResponse &response)
 
 
 
-void onNetworkList(HttpRequest &request, HttpResponse &response)
+void onNetworks(HttpRequest &request, HttpResponse &response)
 {
-	//TODO: rewrite so we start a scan if there are no networks in the list
+
 	if(!authenticated(request, response)) return;
 	JsonObjectStream* stream = new JsonObjectStream();
 	JsonObject& json = stream->getRoot();
-	JsonObject& data = json.createNestedObject("data");
 
-	json["success"] = (bool)true;
+	bool error = false;
 
-	bool connected = WifiStation.isConnected();
-	data["connected"] = connected;
-	if (connected)
+	if (request.getRequestMethod() == RequestMethod::POST)
 	{
-		data["network"]= WifiStation.getSSID();
-	}
-
-	if(scanning) {
-		data["scan"] = true;
-	} else {
-		data["scan"] = false;
-		JsonArray& netlist = data.createNestedArray("available");
-		for (int i = 0; i < networks.count(); i++)
+		String body = request.getBody();
+		if ( body == NULL || body.length() > 64)
 		{
-			if (networks[i].hidden) continue;
-			JsonObject &item = netlist.createNestedObject();
-			item["id"] = (int)networks[i].getHashId();
-			item["title"] = networks[i].ssid;
-			item["signal"] = networks[i].rssi;
-			item["encryption"] = networks[i].getAuthorizationMethodName();
-			//limit to max 25 networks
-			if (i >= 25) break;
+			json["error"] = apiErrMsg(API_ERR_CODES::BAD_REQUEST);
+			return;
+		}
+		else
+		{
+			StaticJsonBuffer<64> jsonBuffer;
+			JsonObject& root = jsonBuffer.parseObject(body);
+			if (root["cmd"].success()) {
+
+				if(!scanning) {
+					scanNetworks();
+				}
+				json["success"] = (bool)true;
+			} else {
+				error = true;
+				json["error"] = apiErrMsg(API_ERR_CODES::BAD_REQUEST);
+			}
+
+		}
+	} else {
+		if(scanning) {
+			json["scanning"] = true;
+		} else {
+			json["scanning"] = false;
+			JsonArray& netlist = json.createNestedArray("available");
+			for (int i = 0; i < networks.count(); i++)
+			{
+				if (networks[i].hidden) continue;
+				JsonObject &item = netlist.createNestedObject();
+				item["id"] = (int)networks[i].getHashId();
+				item["title"] = networks[i].ssid;
+				item["signal"] = networks[i].rssi;
+				item["encryption"] = networks[i].getAuthorizationMethodName();
+				//limit to max 25 networks
+				if (i >= 25) break;
+			}
 		}
 	}
-
 	response.setAllowCrossDomainOrigin("*");
 	response.sendJsonObject(stream);
 }
 
-void onRefreshNetworkList(HttpRequest &request, HttpResponse &response) {
-	if(!authenticated(request, response)) return;
-	JsonObjectStream* stream = new JsonObjectStream();
-	JsonObject& json = stream->getRoot();
-	json["success"] = (bool)false;
-	if(!scanning) {
-		json["success"] = (bool)true;
-		scanNetworks();
-	}
-	response.setAllowCrossDomainOrigin("*");
-	response.sendJsonObject(stream);
-}
 
 
 
@@ -581,43 +642,41 @@ void onConnect(HttpRequest &request, HttpResponse &response)
 	if(!authenticated(request, response)) return;
 	JsonObjectStream* stream = new JsonObjectStream();
 	JsonObject& json = stream->getRoot();
-	JsonObject& data = json.createNestedObject("data");
-
-	json["success"] = (bool)false;
+	//JsonObject& json = json.createNestedObject("response");
+	//bool error = false;
 	if (request.getRequestMethod() == RequestMethod::POST)
 	{
-		if (request.getBody() == NULL)
+		String body = request.getBody();
+		if ( body == NULL || body.length() > 64)
 		{
-			debugf("NULL bodyBuf");
+			response.badRequest();
+			return;
 		}
 		else
 		{
-
-			DynamicJsonBuffer jsonBuffer;
-			JsonObject& root = jsonBuffer.parseObject(request.getBody());
+			StaticJsonBuffer<96> jsonBuffer;
+			JsonObject& root = jsonBuffer.parseObject(body);
 			if (root["ssid"].success() && root["password"].success()) {
 				String ssid = root["ssid"].asString();
 				String password = root["password"].asString();
 				if (password !=  WifiStation.getPassword() || ssid != WifiStation.getSSID()) {
 					WifiStation.config(ssid, password);
 					WifiStation.waitConnection(connectOk, 5, connectFail);
-					// return connecting code
-					json["success"] = (bool)true;
-					data["connecting"] = (bool)true;
-					data["connected"] = (bool)false;
 				}
 				else
 				{
-					json["success"] = (bool)true;
-					data["connecting"] = (bool)false;
-					data["connected"] = (bool)true;
-					//already connected to that network
+					/* We already know that password and SSID so don`t try to connect again
+					 * Don`t send information about this back, since it would allow for
+					 * bruteforce checking for the password by asking controller again and again
+					 */
+
 				}
+				json["success"] = (bool)true;
 
 			}
 			else
-			{	data["error"] = "missing parameter";
-				//return error code
+			{
+				json["error"] = apiErrMsg(API_ERR_CODES::BAD_REQUEST);
 			}
 		}
 
@@ -626,110 +685,119 @@ void onConnect(HttpRequest &request, HttpResponse &response)
 		EStationConnectionStatus status = WifiStation.getConnectionStatus();
 		if ( status == eSCS_Idle ) {
 			//waiting to connect
-			data["connecting"] = (bool)false;
-			data["connected"] = (bool)false;
-			json["status"] = (bool)true;
+			json["status"] = int(CONNECTION_STATUS::IDLE);
 		}
 		else if (status ==  eSCS_GotIP )
 		{
 			// return connected
-			data["connecting"] = (bool)false;
-			data["connected"] = (bool)true;
+			json["status"] = int(CONNECTION_STATUS::CONNECTED);
 			if(cfg.network.connection.dhcp) {
-				data["ip"] = WifiStation.getIP().toString();
+				json["ip"] = WifiStation.getIP().toString();
 			} else {
-				data["ip"] = cfg.network.connection.ip.toString();
+				json["ip"] = cfg.network.connection.ip.toString();
 			}
-			data["restart"] = true;
+			json["restart"] = true;
 			//TODO: stop AP first and then initialize a restart afterward
 			//systemTimer.initializeMs(3000, stopAp).startOnce();
 			systemTimer.initializeMs(3000, restart).startOnce();
-			data["ssid"] = WifiStation.getSSID();
-			json["success"] = (bool)true;
+			json["ssid"] = WifiStation.getSSID();
 		}
 		else if (status == eSCS_Connecting) {
 			//return connecting status
-
-			data["connecting"] = (bool)true;
-			data["connected"] = (bool)false;
-			json["success"] = (bool)true;
+			json["status"] = int(CONNECTION_STATUS::CONNECTING);
 		}
 		else
 		{
 			//FAILED
-			data["connecting"] = (bool)false;
-			data["connected"] = (bool)false;
-			data["error"] = WifiStation.getConnectionStatusName();
-			json["success"] = (bool)true;
+			json["status"] = int(CONNECTION_STATUS::ERR);
+			json["error"] = WifiStation.getConnectionStatusName();
 			WifiStation.config("", "");
 			WifiStation.disconnect();
 		}
 	}
+
 	response.setAllowCrossDomainOrigin("*");
 	response.sendJsonObject(stream);
 }
 
 void onSystemReq(HttpRequest &request, HttpResponse &response) {
 	if(!authenticated(request, response)) return;
+	if (request.getRequestMethod() != RequestMethod::POST) {
+		response.badRequest();
+		return;
+	}
 	JsonObjectStream* stream = new JsonObjectStream();
 	JsonObject& json = stream->getRoot();
-	json["success"] = (bool)false;
-	if (request.getRequestMethod() == RequestMethod::POST)
+	bool error = false;
+
+	// only allow post commands - otherwise http error
+
+
+	String body = request.getBody();
+	if ( body == NULL || body.length() > 64)
 	{
-		if (request.getBody() == NULL)
-		{
-			debugf("NULL bodyBuf");
+		response.badRequest();
+		return;
+	}
+	else
+	{
+		StaticJsonBuffer<64> jsonBuffer;
+		JsonObject& root = jsonBuffer.parseObject(body);
+
+		if(root["cmd"].success()) {
+			String cmd = root["cmd"].asString();
+			if(cmd.indexOf("reset") != -1) {
+				cfg.reset();
+				WifiStation.config("", "");
+				systemTimer.initializeMs(3000, restart).startOnce();
+			}
+			else if(cmd.indexOf("restart") != -1) {
+				systemTimer.initializeMs(3000, restart).startOnce();
+			}
+			else if (cmd.indexOf("forget_wifi") != -1){
+				WifiStation.config("", "");
+				cfg.network.connection.password = "";
+				cfg.network.connection.ssid = "";
+				cfg.save();
+				systemTimer.initializeMs(3000, restart).startOnce();
+			}
+			else
+			{
+				error = true;
+			}
 		}
 		else
 		{
-			DynamicJsonBuffer jsonBuffer;
-			JsonObject& root = jsonBuffer.parseObject(request.getBody());
-			if(root["cmd"].success()) {
-
-				String cmd = root["cmd"].asString();
-				if(cmd.indexOf("reset") != -1) {
-					cfg.reset();
-					WifiStation.config("", "");
-					systemTimer.initializeMs(3000, restart).startOnce();
-					json["success"] = true;
-				}
-				else if(cmd.indexOf("restart") != -1) {
-					systemTimer.initializeMs(3000, restart).startOnce();
-					json["success"] = true;
-				}
-				else if (cmd.indexOf("forget_wifi") != -1){
-					WifiStation.config("", "");
-					cfg.network.connection.password = "";
-					cfg.network.connection.ssid = "";
-					cfg.save();
-					systemTimer.initializeMs(3000, restart).startOnce();
-					json["success"] = true;
-				}
-			}
+			error = true;
+		}
+		if (error) {
+			json["error"] = apiErrMsg(API_ERR_CODES::MISSING_PARAM);
 		}
 	}
-	if (json["success"]) {
-		json["error"] = "wrong command";
+	if (!error) {
+		json["success"] = (bool)true;
 	}
 	response.setAllowCrossDomainOrigin("*");
 	response.sendJsonObject(stream);
+
 }
 
 void onUpdate(HttpRequest &request, HttpResponse &response) {
 	if(!authenticated(request, response)) return;
 	JsonObjectStream* stream = new JsonObjectStream();
 	JsonObject& json = stream->getRoot();
-	JsonObject& data = json.createNestedObject("data");
-	json["success"] = (bool)false;
+
+	bool error = false;
 	if (request.getRequestMethod() == RequestMethod::POST)
 	{
 		if (request.getBody() == NULL)
 		{
-			debugf("NULL bodyBuf");
+			response.badRequest();
+			return;
 		}
 		else
 		{
-			DynamicJsonBuffer jsonBuffer;
+			StaticJsonBuffer<1024> jsonBuffer;
 			JsonObject& root = jsonBuffer.parseObject(request.getBody());
 			bool force = false;
 			bool updating = false;
@@ -737,29 +805,38 @@ void onUpdate(HttpRequest &request, HttpResponse &response) {
 				force = root["force"];
 			}
 			if(root["rom"].success()) {
-				if(force) {
-					//TODO: add to download item list
-				}
-			}
-			if (root["resources"].success()){
 
+			}
+			if (root["webapp"].success()){
 
 			}
 			if (updating) {
-				data["updating"] = true;
+
+				json["updating"] = true;
 				//start updatetimer
 			}
 			else
 			{
-				data["updating"] = false;
+				json["updating"] = false;
 			}
-			json["success"] = true;
+		}
+		if (!error) {
+			json["success"] = (bool)true;
 		}
 	} else {
-		json["success"] = true;
 		//return update status
 	}
 
+	response.setAllowCrossDomainOrigin("*");
+	response.sendJsonObject(stream);
+}
+
+//simple call-response to check if we can reach server
+void onPing(HttpRequest &request, HttpResponse &response) {
+	JsonObjectStream* stream = new JsonObjectStream();
+	JsonObject& json = stream->getRoot();
+
+	json["ping"] = "pong";
 	response.setAllowCrossDomainOrigin("*");
 	response.sendJsonObject(stream);
 }
@@ -773,11 +850,12 @@ void startWebServer()
 	server.enableHeaderProcessing("Authorization");
 	server.addPath("/", onIndex);
 	server.addPath("/config", onConfig);
+	server.addPath("/info", onInfo);
 	server.addPath("/color", onColor);
-	server.addPath("/get-networks", onNetworkList);
-	server.addPath("/refreshnetworks", onRefreshNetworkList);
+	server.addPath("/networks", onNetworks);
 	server.addPath("/system", onSystemReq);
 	server.addPath("/update", onUpdate);
 	server.addPath("/connect", onConnect);
+	server.addPath("/ping", onPing);
 }
 
