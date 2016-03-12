@@ -5,8 +5,8 @@
  */
 #include <SmingCore/SmingCore.h>
 
-#ifndef INCLUDE_APPSETTINGS_H_
-#define INCLUDE_APPSETTINGS_H_
+#ifndef CONFIG_H_
+#define CONFIG_H_
 
 #define APP_COLOR_FILE ".color"
 #define APP_SETTINGS_FILE ".cfg"
@@ -26,7 +26,7 @@ struct ActiveColorStorage
 
 		void load(bool print = false)
 		{
-			DynamicJsonBuffer jsonBuffer;
+			StaticJsonBuffer<72> jsonBuffer;
 			if (exist())
 			{
 				int size = fileGetSize(APP_COLOR_FILE);

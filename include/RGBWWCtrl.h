@@ -20,8 +20,8 @@
  *
  */
 
-#ifndef INCLUDE_RGBWWCTRL_H_
-#define INCLUDE_RGBWWCTRL_H_
+#ifndef RGBWWCTRL_H_
+#define RGBWWCTRL_H_
 
 //default defines
 
@@ -50,7 +50,7 @@
 #include <user_config.h>
 #include <SmingCore/SmingCore.h>
 #include <config.h>
-#include <version.h>
+#include <constant.h>
 #include <Libraries/RGBWWLed/RGBWWLed.h>
 
 /* forward declarations */
@@ -68,8 +68,9 @@ extern void connectFail();
 extern RGBWWLed rgbwwctrl;
 extern BssList networks;
 extern Timer systemTimer;
+extern Timer updateTimer;
 extern bool scanning;
 extern ApplicationSettingsStorage cfg;
-extern ActiveColorStorage c;
+extern ActiveColorStorage stored_color;
 
-#endif /* INCLUDE_RGBWWCTRL_H_ */
+#endif /* RGBWWCTRL_H_ */
