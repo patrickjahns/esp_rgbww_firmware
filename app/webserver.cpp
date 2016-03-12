@@ -1,7 +1,7 @@
 #include <RGBWWCtrl.h>
 #include <Services/WebHelpers/base64.h>
 
-//Timer updateTimer;
+
 HttpServer server;
 
 bool ICACHE_FLASH_ATTR authenticated(HttpRequest &request, HttpResponse &response){
@@ -859,3 +859,6 @@ void startWebServer()
 	server.addPath("/ping", onPing);
 }
 
+void stopWebServer() {
+
+}

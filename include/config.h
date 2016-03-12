@@ -1,6 +1,6 @@
 /*
  *
- * AppSettings.h
+ * config.h
  *
  */
 #include <SmingCore/SmingCore.h>

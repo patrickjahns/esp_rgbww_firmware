@@ -49,28 +49,10 @@
 //includes
 #include <user_config.h>
 #include <SmingCore/SmingCore.h>
-#include <config.h>
-#include <constant.h>
 #include <Libraries/RGBWWLed/RGBWWLed.h>
+#include <config.h>
+#include <application.h>
+#include <webserver.h>
 
-/* forward declarations */
-
-
-extern void startWebServer();
-extern void scanNetworks();
-extern void setupRGBWW();
-extern void startAp();
-extern void stopAp();
-extern void restart();
-extern void connectOk();
-extern void connectFail();
-
-extern RGBWWLed rgbwwctrl;
-extern BssList networks;
-extern Timer systemTimer;
-extern Timer updateTimer;
-extern bool scanning;
-extern ApplicationSettingsStorage cfg;
-extern ActiveColorStorage stored_color;
 
 #endif /* RGBWWCTRL_H_ */

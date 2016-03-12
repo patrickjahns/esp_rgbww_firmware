@@ -1,18 +1,10 @@
-#include <user_config.h>
-#include <SmingCore/SmingCore.h>
 #include <RGBWWCtrl.h>
 
-
-ApplicationSettingsStorage cfg;
-ActiveColorStorage color;
 const IPAddress ApIP = IPAddress("192.168.4.1");
 DNSServer* dnsServer = NULL;
-RGBWWLed rgbwwctrl;
-bool scanning = false;
-BssList networks;
-Timer systemTimer;
-Timer ledTimer;
 
+
+Timer ledTimer;
 
 
 void restart() {
@@ -114,11 +106,11 @@ void showLed() {
 void saveRGBWW(RGBWWLed* rgbwwctrl) {
 	debugf("callback from RGBWW lib");
 	HSVK c = rgbwwctrl->getCurrentColor();
-	color.color.h = c.h;
-	color.color.s = c.s;
-	color.color.v = c.v;
-	color.color.k = c.k;
-	color.save();
+	stored_color.color.h = c.h;
+	stored_color.color.s = c.s;
+	stored_color.color.v = c.v;
+	stored_color.color.k = c.k;
+	stored_color.save();
 }
 
 void setupRGBWW() {
@@ -137,7 +129,7 @@ void setupRGBWW() {
 			cfg.color.hsv.magenta);
     rgbwwctrl.colorutils.setColorMode((RGBWW_COLORMODE)cfg.color.outputmode);
     rgbwwctrl.colorutils.setHSVmodel((RGBWW_HSVMODEL)cfg.color.hsv.model);
-    ledTimer.initializeMs(20, showLed).start();
+
 }
 
 
@@ -165,10 +157,12 @@ void init()
     setupRGBWW();
 
     //load last color
-    color.load();
-    HSVK c = HSVK(color.color.h, color.color.s, color.color.v, color.color.k);
+    stored_color.load();
+    HSVK c = HSVK(stored_color.color.h, stored_color.color.s, stored_color.color.v, stored_color.color.k);
     rgbwwctrl.setOutput(c);
 
+    //start led loop
+    ledTimer.initializeMs(20, showLed).start();
 
     //setup networking related
     //don`t enable/disable again to save eeprom cycles
