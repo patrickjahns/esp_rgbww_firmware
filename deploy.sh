@@ -6,7 +6,7 @@ set -e # exit with nonzero exit code if anything fails
 	echo "Not a release - skipping deploy!"
 	exit 0;
   fi
-GH_PAGE_LINK="http://patrickjahns.github.io/esp_rgbww_firmware/release/"
+GH_PAGE_LINK="http://patrickjahns.github.io/esp_rgbww_firmware/release"
 
 cd $TRAVIS_BUILD_DIR
 
