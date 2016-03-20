@@ -1,4 +1,5 @@
 # RGBWWFirmware
+[![Build Status](https://travis-ci.org/patrickjahns/esp_rgbww_firmware.svg?branch=master)](https://travis-ci.org/patrickjahns/esp_rgbww_firmware)
 ### Firmware for the RGBWW Fhem controller
 
 This repository provides the firmware for the esp_rgbww_controller board
