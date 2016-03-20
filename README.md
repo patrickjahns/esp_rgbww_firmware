@@ -22,7 +22,7 @@ There are different ways of installing the firmware.
 Either you can flash a precompiled binary and file system or you can compile it yourself
 
 ### Flash precompiled binary
-Binaries will be provided with release of the firmware
+Binaries can be found at [http://patrickjahns.github.io/esp_rgbww_firmware/](http://patrickjahns.github.io/esp_rgbww_firmware/)
 
 #### Compile and Flash
 Compiling the current version of the project requires:
@@ -37,7 +37,10 @@ The [Sming Framework Wiki](https://github.com/SmingHub/Sming/wiki) lists differe
 The controller provides a simple JSON API for communication
 
 ###API Endpoints
-Brief documentation
+Brief documentation of API endpoints
+
+On success - endpoints return either data or `{ 'success' : true }`.  
+If a request fails, endpoints return an error. Example: `{ 'error' : 'missing param' }`
 
 ```
 /config
@@ -48,6 +51,11 @@ Brief documentation
 `POST` change the setting values
 <br><br>
 ```
+/info
+```
+`GET` return information about the controller
+<br><br>
+```
 /color
 ```
 
@@ -56,15 +64,12 @@ Brief documentation
 `POST` change color
 <br><br>
 ```
-/refreshnetworks
-```
-`GET` start a network scan
-<br><br>
-```
-/get-networks
+/networks
 ```
 
-`GET` List available networks / scanning status
+`GET` list available networks / scanning status
+
+`POST {'cmd':'scan'}` start a network scan 
 <br><br>
 ```
 /connect
@@ -79,15 +84,34 @@ Brief documentation
 ```
 
 `POST` issue commands to execute [reset/restart/forget_wifi]
+<br><br>
+```
+/update
+```
 
+`POST` start OTA  
+
+`GET` return updates status
+<br><br>
+```
+/ping
+```
+
+`GET` check connection
 <br><br><br>
 ## Work in Progress
 ### Changelog
-* 10.03.2016
-  Update repository with latest development version utilizing SMING framework
-* 08.03.2016
-  Notice that development will switch to SMING framework
-* 02.02.2016
+* 20.03.2016  
+  added OTA functionality  
+  updated API endpoints  
+
+* 10.03.2016  
+  Update repository with latest development version utilizing SMING framework  
+  
+* 08.03.2016  
+  Notice that development will switch to SMING framework  
+  
+* 02.02.2016  
   Initial commit and README
 
 ### ToDos
