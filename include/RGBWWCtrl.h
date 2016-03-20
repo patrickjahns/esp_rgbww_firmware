@@ -50,6 +50,7 @@
 #include <user_config.h>
 #include <SmingCore/SmingCore.h>
 #include <Libraries/RGBWWLed/RGBWWLed.h>
+#include <otaupdate.h>
 #include <config.h>
 #include <application.h>
 #include <webserver.h>

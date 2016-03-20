@@ -13,7 +13,7 @@
 
 #define CFG_VERSION "1"
 
-struct ActiveColorStorage
+struct ColorStorage
 {
 		struct hsvkcolor {
 			int h = 0;
@@ -64,7 +64,7 @@ struct ActiveColorStorage
 };
 
 
-struct ApplicationSettingsStorage
+struct ApplicationSettings
 {
 	struct network {
 
@@ -163,7 +163,7 @@ struct ApplicationSettingsStorage
 			char* jsonString = new char[size + 1];
 			fileGetContent(APP_SETTINGS_FILE, jsonString, size + 1);
 			JsonObject& root = jsonBuffer.parseObject(jsonString);
-
+			//TODO: rewrite to cleanup unneeded tree structures
 			//connection
 			network.connection.ssid = root["network"]["connection"]["ssid"].asString();
 			network.connection.password = root["network"]["connection"]["password"].asString();
@@ -294,6 +294,7 @@ struct ApplicationSettingsStorage
 		if (print) {
 			root.prettyPrintTo(Serial);
 		}
+		//TODO directly write to file without string buffer
 		root.printTo(rootString);
 		fileSetContent(APP_SETTINGS_FILE, rootString);
 

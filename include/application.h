@@ -21,13 +21,18 @@ void stopAp();
 void restart();
 void connectOk();
 void connectFail();
+void stopAPandReset();
+
+//TODO: move application into its own class and call class from init
+//TODO: move webserver into its own class
 
 // forward declaration for global vars
-static Timer systemTimer;
-static BssList networks;
-static bool scanning = false;
-static RGBWWLed rgbwwctrl;
-static ApplicationSettingsStorage cfg;
-static ActiveColorStorage stored_color;
+extern Timer systemTimer;
+extern BssList networks;
+extern bool scanning;
+extern RGBWWLed rgbwwctrl;
+extern ApplicationOTA ota;
+extern ApplicationSettings cfg;
+extern ColorStorage stored_color;
 
 #endif // APPLICATION_H_

@@ -1,10 +1,18 @@
 #include <RGBWWCtrl.h>
 
+Timer systemTimer;
+BssList networks;
+bool scanning = false;
+RGBWWLed rgbwwctrl;
+ApplicationOTA ota;
+ApplicationSettings cfg;
+ColorStorage stored_color;
 const IPAddress ApIP = IPAddress("192.168.4.1");
 DNSServer* dnsServer = NULL;
 
 
 Timer ledTimer;
+
 
 
 void restart() {
@@ -20,6 +28,11 @@ void startServices()
 	//start mqtt client
 }
 
+void stopAPandReset() {
+	stopAp();
+	System.restart();
+
+}
 
 void stopAp() {
 	debugf("Stopping accesspoint and DNS server");
@@ -37,7 +50,6 @@ void stopAp() {
 void startAp() {
 	byte DNS_PORT = 53;
 	debugf("Starting accesspoint");
-	WifiAccessPoint.setIP(ApIP);
 	WifiAccessPoint.enable(true);
 
 	if (cfg.network.ap.secured) {
@@ -78,6 +90,7 @@ void connectStartOk() {
 	if(WifiAccessPoint.isEnabled()) {
 		systemTimer.initializeMs(1000, stopAp).startOnce();
 	}
+
 };
 
 
@@ -150,8 +163,11 @@ void init()
 	//disable wifi sleep
 	wifi_set_sleep_type(NONE_SLEEP_T);
 
+	//WifiStation.enable(true);
+	//WifiStation.config("Die (P)fisters", "kannjanedsei2015");
+	//WifiStation.waitConnection(connectStartOk, 15, connectStartFail);
 	//load settings
-	cfg.load(true);
+	cfg.load();
 
 	//setup everything led related
     setupRGBWW();
@@ -204,6 +220,7 @@ void init()
 			}
 			WifiStation.waitConnection(connectStartOk, 15, connectStartFail);
 		} else {
+			WifiAccessPoint.setIP(ApIP);
 			startAp();
 			scanNetworks();
 		}
@@ -215,10 +232,10 @@ void init()
 
 		debugf("setting version details");
 		cfg.save();
+		WifiAccessPoint.setIP(ApIP);
 		startAp();
 		scanNetworks();
 	}
-
 
 
 	// Run Services on system ready

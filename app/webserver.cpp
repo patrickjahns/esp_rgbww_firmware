@@ -473,8 +473,7 @@ void onInfo(HttpRequest &request, HttpResponse &response)
 {
 	if(!authenticated(request, response)) return;
 	JsonObjectStream* stream = new JsonObjectStream();
-	JsonObject& json = stream->getRoot();
-	JsonObject& data = json.createNestedObject("data");
+	JsonObject& data = stream->getRoot();
 	data["deviceid"] = String(system_get_chip_id());
 	data["firmware"] = fw_version;
 	data["config_version"] = cfg.configversion;
@@ -482,7 +481,7 @@ void onInfo(HttpRequest &request, HttpResponse &response)
 	data["rgbwwled"] = RGBWW_VERSION;
 	JsonObject& con = data.createNestedObject("connection");
 	con["connected"] = WifiStation.isConnected();
-	con["ssid"] = cfg.network.connection.ssid.c_str();
+	con["ssid"] = WifiStation.getSSID ();
 	con["dhcp"] = WifiStation.isEnabledDHCP();
 	con["ip"] = WifiStation.getIP().toString();
 	con["netmask"] = WifiStation.getNetworkMask().toString();
@@ -509,7 +508,7 @@ void onColor(HttpRequest &request, HttpResponse &response)
 		else
 		{
 
-			StaticJsonBuffer<128> jsonBuffer;
+			DynamicJsonBuffer jsonBuffer;
 			JsonObject& root = jsonBuffer.parseObject(body);
 			//root.prettyPrintTo(Serial);
 
@@ -559,8 +558,7 @@ void onColor(HttpRequest &request, HttpResponse &response)
 		}
 	}
 	else {
-		JsonObject& data = json.createNestedObject("data");
-		JsonObject& color = data.createNestedObject("color");
+		JsonObject& color = json.createNestedObject("color");
 		float h, s, v;
 		int k;
 		HSVK c = rgbwwctrl.getCurrentColor();
@@ -597,7 +595,7 @@ void onNetworks(HttpRequest &request, HttpResponse &response)
 		}
 		else
 		{
-			StaticJsonBuffer<64> jsonBuffer;
+			DynamicJsonBuffer jsonBuffer;
 			JsonObject& root = jsonBuffer.parseObject(body);
 			if (root["cmd"].success()) {
 
@@ -654,7 +652,7 @@ void onConnect(HttpRequest &request, HttpResponse &response)
 		}
 		else
 		{
-			StaticJsonBuffer<96> jsonBuffer;
+			DynamicJsonBuffer jsonBuffer;
 			JsonObject& root = jsonBuffer.parseObject(body);
 			if (root["ssid"].success() && root["password"].success()) {
 				String ssid = root["ssid"].asString();
@@ -693,17 +691,20 @@ void onConnect(HttpRequest &request, HttpResponse &response)
 			json["status"] = int(CONNECTION_STATUS::CONNECTED);
 			if(cfg.network.connection.dhcp) {
 				json["ip"] = WifiStation.getIP().toString();
+				systemTimer.initializeMs(3000, stopAPandReset).startOnce();
 			} else {
 				json["ip"] = cfg.network.connection.ip.toString();
+				systemTimer.initializeMs(3000, stopAp).startOnce();
 			}
 			json["restart"] = true;
 			//TODO: stop AP first and then initialize a restart afterward
 			//systemTimer.initializeMs(3000, stopAp).startOnce();
-			systemTimer.initializeMs(3000, restart).startOnce();
+
 			json["ssid"] = WifiStation.getSSID();
 		}
 		else if (status == eSCS_Connecting) {
 			//return connecting status
+
 			json["status"] = int(CONNECTION_STATUS::CONNECTING);
 		}
 		else
@@ -797,34 +798,53 @@ void onUpdate(HttpRequest &request, HttpResponse &response) {
 		}
 		else
 		{
-			StaticJsonBuffer<1024> jsonBuffer;
+			DynamicJsonBuffer jsonBuffer;
 			JsonObject& root = jsonBuffer.parseObject(request.getBody());
-			bool force = false;
 			bool updating = false;
-			if (root["force"].success()) {
-				force = root["force"];
-			}
+
 			if(root["rom"].success()) {
-
+				if(root["rom"]["url"].success()) {
+					ota.initFirmwareUpdate(root["rom"]["url"].asString());
+				}
+				else
+				{
+					error = true;
+				}
 			}
+
 			if (root["webapp"].success()){
+				if(root["webapp"]["url"].success() && root["webapp"]["url"].is<JsonArray&>()) {
 
-			}
-			if (updating) {
+					JsonArray& jsonurls = root["webapp"]["url"].asArray();
+					int i = 0;
+					int items = jsonurls.size();
+					String urls[items];
+					for(JsonArray::iterator it=jsonurls.begin(); it!=jsonurls.end(); ++it)
+					{
+						urls[i] = it->asString();
+					    i += 1;
 
-				json["updating"] = true;
-				//start updatetimer
+					}
+					ota.initWebappUpdate(urls, items);
+				}
+				else
+				{
+					error = true;
+				}
 			}
-			else
-			{
-				json["updating"] = false;
-			}
+
+
+
 		}
 		if (!error) {
+			ota.start();
 			json["success"] = (bool)true;
+		} else {
+			json["error"] = apiErrMsg(API_ERR_CODES::MISSING_PARAM);
 		}
 	} else {
-		//return update status
+		json["rom"] = int(ota.getFirmwareStatus());
+		json["webapp"] = int(ota.getWebappStatus());
 	}
 
 	response.setAllowCrossDomainOrigin("*");
