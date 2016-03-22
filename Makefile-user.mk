@@ -22,7 +22,7 @@ MODULES = app
 
 ## COM port parameter is reqruied to flash firmware correctly.
 ## Windows: 
-COM_PORT = COM3
+# COM_PORT = COM3
 
 ## MacOS / Linux:
 # COM_PORT = /dev/tty.usbserial
@@ -30,23 +30,30 @@ COM_PORT = COM3
 ## Com port speed
 COM_SPEED	= 115200
 
-#### overridable rBoot options ####
-## use rboot build mode
-RBOOT_ENABLED ?= 1
-## enable big flash support (for multiple roms, each in separate 1mb block of flash)
-RBOOT_BIG_FLASH ?= 1
-## two rom mode (where two roms sit in the same 1mb block of flash)
-RBOOT_TWO_ROMS  ?= 0
-
 ## Configure flash parameters (for ESP12-E and other new boards):
 # SPI_MODE = dio
 
+# SPI EEPROM SIZE
 SPI_SIZE        ?= 4M
 
-## SPIFFS options
+#### SPIFFS options ####
+# folder with files to include
 SPIFF_FILES = webapp
 
+# size of filesystem
 SPIFF_SIZE      ?= 1000000 #~1MB spiffs size
+
+#### rBoot options ####
+# use rboot build mode
+RBOOT_ENABLED ?= 1
+
+# enable big flash support (for multiple roms, each in separate 1mb block of flash)
+RBOOT_BIG_FLASH ?= 1
+
+# two rom mode (where two roms sit in the same 1mb block of flash)
+RBOOT_TWO_ROMS  ?= 0
+
+# where does the filesystem reside
 RBOOT_SPIFFS_0  ?= 0x300000
 
 
