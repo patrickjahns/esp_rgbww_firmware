@@ -9,8 +9,6 @@ enum OTASTATUS {
 };
 
 
-
-
 typedef Delegate<void(bool result)> webappUpdateDelegate;
 
 struct webappUpdateItem {
