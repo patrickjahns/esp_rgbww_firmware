@@ -18,7 +18,7 @@ __Quicklinks__
 - __Setup guides__
   - [Installation on a fresh controller](https://github.com/patrickjahns/esp_rgbww_firmware/wiki/1.1-Flashing)
   - [Setup guide](https://github.com/patrickjahns/esp_rgbww_firmware/wiki/1.2-Initial-Setup)
-  -[Web interface](https://github.com/patrickjahns/esp_rgbww_firmware/wiki/1.3-Web-Interface)
+  - [Web interface](https://github.com/patrickjahns/esp_rgbww_firmware/wiki/1.3-Web-Interface)
   - [OTA] (https://github.com/patrickjahns/esp_rgbww_firmware/wiki/3.-OTA)
   - Troubleshooting
   - [Limitations/Known issues](https://github.com/patrickjahns/esp_rgbww_firmware/wiki/4.-Limitations-and-known-issues)
