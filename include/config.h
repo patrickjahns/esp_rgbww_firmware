@@ -105,8 +105,8 @@ struct ApplicationSettings
 	};
 
 	struct general {
-		bool	settings_secured = DEFAULT_SETTINGS_SECURED;
-		String	settings_password = DEFAULT_SETTINGS_PASSWORD;
+		bool	api_secured = DEFAULT_API_SECURED;
+		String	api_password = DEFAULT_API_PASSWORD;
 	};
 
 	general general;
@@ -171,8 +171,8 @@ struct ApplicationSettings
 			color.brightness.cw = root["color"]["brightness"]["cw"];
 
 			//general
-			general.settings_password = root["general"]["settings_password"].asString();
-			general.settings_secured = root["general"]["settings_secured"];
+			general.api_password = root["general"]["api_password"].asString();
+			general.api_secured = root["general"]["api_secured"];
 
 			//TODO check if we can actually load the config
 			configversion = root["general"]["config_version"].asString();
@@ -243,8 +243,8 @@ struct ApplicationSettings
 
 		JsonObject& g = jsonBuffer.createObject();
 		root["general"] = g;
-		g["settings_secured"] = general.settings_secured;
-		g["settings_password"] = general.settings_password;
+		g["api_secured"] = general.api_secured;
+		g["api_password"] = general.api_password;
 		g["config_version"] = CFG_VERSION;
 
 		String rootString;

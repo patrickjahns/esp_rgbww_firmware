@@ -58,7 +58,7 @@ bool ApplicationWebserver::isRunning() {
 
 
 bool ICACHE_FLASH_ATTR ApplicationWebserver::authenticated(HttpRequest &request, HttpResponse &response){
-	if (!app.cfg.general.settings_secured) return true;
+	if (!app.cfg.general.api_secured) return true;
     String userPass=request.getHeader("Authorization");
     int headerLength=userPass.length()-6; // header in form of: "Basic MTIzNDU2OmFiY2RlZmc="so the 6 is to get to beginning of 64 encoded string
     if(headerLength>50){
@@ -69,7 +69,7 @@ bool ICACHE_FLASH_ATTR ApplicationWebserver::authenticated(HttpRequest &request,
     int outlen = base64_decode(headerLength,userPass.c_str()+6, headerLength, decbuf);
     decbuf[outlen] = 0;
     userPass = String((char*)decbuf);
-    if(userPass.endsWith(app.cfg.general.settings_password)){
+    if(userPass.endsWith(app.cfg.general.api_password)){
         return true;
     }
 
@@ -445,13 +445,13 @@ void ApplicationWebserver::onConfig(HttpRequest &request, HttpResponse &response
 
 		if(root["security"].success())
 		{
-			if(root["security"]["settings_secured"].success()){
-				app.cfg.general.settings_secured = root["security"]["settings_secured"];
-				if (root["security"]["settings_secured"]) {
-					if(root["security"]["settings_password"].success()){
-						if(root["security"]["settings_password"] != app.cfg.general.settings_password) {
+			if(root["security"]["api_secured"].success()){
+				app.cfg.general.api_secured = root["security"]["api_secured"];
+				if (root["security"]["api_secured"]) {
+					if(root["security"]["api_password"].success()){
+						if(root["security"]["api_password"] != app.cfg.general.api_password) {
 
-							app.cfg.general.settings_password = root["security"]["settings_password"].asString();
+							app.cfg.general.api_password = root["security"]["api_password"].asString();
 						}
 					}
 				} else {
@@ -517,7 +517,8 @@ void ApplicationWebserver::onConfig(HttpRequest &request, HttpResponse &response
 		mqtt["server"] = app.cfg.network.mqtt.server.c_str();
 		mqtt["port"] = app.cfg.network.mqtt.port;
 		mqtt["username"] = app.cfg.network.mqtt.username.c_str();
-		mqtt["password"] = app.cfg.network.mqtt.password.c_str();
+
+		//mqtt["password"] = app.cfg.network.mqtt.password.c_str();
 
 		JsonObject& udp = net.createNestedObject("udpserver");
 		udp["enabled"] = app.cfg.network.udpserver.enabled;
@@ -552,7 +553,7 @@ void ApplicationWebserver::onConfig(HttpRequest &request, HttpResponse &response
 		ctmp["cw"] = app.cfg.color.colortemp.cw;
 
 		JsonObject& s = json.createNestedObject("security");
-		s["settings_secured"] = app.cfg.general.settings_secured;
+		s["api_secured"] = app.cfg.general.api_secured;
 		sendApiResponse(response, stream);
 	}
 }
