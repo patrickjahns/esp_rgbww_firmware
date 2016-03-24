@@ -1,6 +1,22 @@
-/*
+/**
+ * @file
+ * @author  Patrick Jahns http://github.com/patrickjahns
  *
- * config.h
+ * @section LICENSE
+ *
+ * This program is free software; you can redistribute it and/or
+ * modify it under the terms of the GNU General Public License as
+ * published by the Free Software Foundation; either version 3 of
+ * the License, or (at your option) any later version.
+ *
+ * This program is distributed in the hope that it will be useful, but
+ * WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU
+ * General Public License for more details at
+ * https://www.gnu.org/copyleft/gpl.html
+ *
+ * @section DESCRIPTION
+ *
  *
  */
 #include <SmingCore/SmingCore.h>
@@ -8,69 +24,14 @@
 #ifndef CONFIG_H_
 #define CONFIG_H_
 
-#define APP_COLOR_FILE ".color"
 #define APP_SETTINGS_FILE ".cfg"
-
 #define CFG_VERSION "1"
-
-struct ColorStorage
-{
-		struct hsvkcolor {
-			int h = 0;
-			int s = 0;
-			int v = 0;
-			int k = 0;
-		};
-
-		hsvkcolor color;
-
-		void load(bool print = false)
-		{
-			StaticJsonBuffer<72> jsonBuffer;
-			if (exist())
-			{
-				int size = fileGetSize(APP_COLOR_FILE);
-				char* jsonString = new char[size + 1];
-				fileGetContent(APP_COLOR_FILE, jsonString, size + 1);
-				JsonObject& root = jsonBuffer.parseObject(jsonString);
-				color.h = root["h"];
-				color.s = root["s"];
-				color.v = root["v"];
-				color.k = root["k"];
-				if (print) {
-					root.prettyPrintTo(Serial);
-				}
-				delete[] jsonString;
-			}
-		}
-
-		void save(bool print = false)
-		{
-			DynamicJsonBuffer jsonBuffer;
-			JsonObject& root = jsonBuffer.createObject();
-			root["h"] = color.h;
-			root["s"] = color.s;
-			root["v"] = color.v;
-			root["k"] = color.k;
-			String rootString;
-			if (print) {
-				root.prettyPrintTo(Serial);
-			}
-			root.printTo(rootString);
-			fileSetContent(APP_COLOR_FILE, rootString);
-		}
-
-		bool exist() { return fileExist(APP_COLOR_FILE); }
-};
-
 
 struct ApplicationSettings
 {
 	struct network {
 
 		struct connection {
-			String ssid;
-			String password;
 			String mdnshostname;
 			bool dhcp = true;
 			IPAddress ip;
@@ -165,8 +126,6 @@ struct ApplicationSettings
 			JsonObject& root = jsonBuffer.parseObject(jsonString);
 			//TODO: rewrite to cleanup unneeded tree structures
 			//connection
-			network.connection.ssid = root["network"]["connection"]["ssid"].asString();
-			network.connection.password = root["network"]["connection"]["password"].asString();
 			network.connection.mdnshostname = root["network"]["connection"]["hostname"].asString();
 			network.connection.dhcp = root["network"]["connection"]["dhcp"];
 			network.connection.ip = root["network"]["connection"]["ip"].asString();
@@ -233,8 +192,6 @@ struct ApplicationSettings
 
 		JsonObject& net = root.createNestedObject("network");
 		JsonObject& con = net.createNestedObject("connection");
-		con["ssid"] = network.connection.ssid.c_str();
-		con["password"] = network.connection.password.c_str();
 		con["dhcp"] = network.connection.dhcp;
 		con["ip"] = network.connection.ip.toString();
 		con["netmask"] = network.connection.netmask.toString();
@@ -294,7 +251,6 @@ struct ApplicationSettings
 		if (print) {
 			root.prettyPrintTo(Serial);
 		}
-		//TODO directly write to file without string buffer
 		root.printTo(rootString);
 		fileSetContent(APP_SETTINGS_FILE, rootString);
 

@@ -1,244 +1,116 @@
+/**
+ * @file
+ * @author  Patrick Jahns http://github.com/patrickjahns
+ *
+ * @section LICENSE
+ *
+ * This program is free software; you can redistribute it and/or
+ * modify it under the terms of the GNU General Public License as
+ * published by the Free Software Foundation; either version 3 of
+ * the License, or (at your option) any later version.
+ *
+ * This program is distributed in the hope that it will be useful, but
+ * WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU
+ * General Public License for more details at
+ * https://www.gnu.org/copyleft/gpl.html
+ *
+ * @section DESCRIPTION
+ *
+ *
+ */
+
 #include <RGBWWCtrl.h>
 
-Timer systemTimer;
-BssList networks;
-bool scanning = false;
-RGBWWLed rgbwwctrl;
-ApplicationOTA ota;
-ApplicationSettings cfg;
-ColorStorage stored_color;
-const IPAddress ApIP = IPAddress("192.168.4.1");
-DNSServer* dnsServer = NULL;
+Application app;
+
+// Sming Framework INIT method - called during boot
+void init() {
+	Serial.printf("RGBWW Controller v %s\r\n", fw_version);
+	app.init();
+}
+
+// seperated application init
+void Application::init() {
 
 
-Timer ledTimer;
+	// Mount file system, in order to work with files
+	spiffs_mount_manual(RBOOT_SPIFFS_0 + 0x40200000, SPIFF_SIZE);
+
+	Serial.begin(SERIAL_BAUD_RATE); // 115200 by default
+	Serial.systemDebugOutput(false); // don`t show system debug messages
+
+	//load settings
+	//TODO check for reset here and delete file or reload file depending on
 
 
 
-void restart() {
-	System.restart();
+	if (cfg.exist()) {
+		cfg.load(true);
+	} else {
+		debugapp("Application::init - it is first run");
+		_first_run = true;
+		cfg.save();
+	}
+
+	// initialize led ctrl
+	rgbwwctrl.init();
+
+	// initialize networking
+	network.init();
+
+	// Run Services on system ready
+	System.onReady(SystemReadyDelegate(&Application::startServices, this));
+
+
+}
+
+bool Application::isFirstRun() {
+	return _first_run;
 }
 
 // Will be called when system initialization was completed
-void startServices()
+void Application::startServices()
 {
-	startWebServer();
+	rgbwwctrl.start();
+	webserver.start();
+
 	//start TCP
 	//start UDP
 	//start mqtt client
 }
 
-void stopAPandReset() {
-	stopAp();
+
+void Application::restart() {
+	Serial.println("Restarting");
 	System.restart();
-
-}
-
-void stopAp() {
-	debugf("Stopping accesspoint and DNS server");
-	if (WifiAccessPoint.isEnabled()) {
-		WifiAccessPoint.enable(false);
-	}
-	if (dnsServer!= NULL) {
-		dnsServer->stop();
-		delete dnsServer;
-	}
-
 }
 
 
-void startAp() {
-	byte DNS_PORT = 53;
-	debugf("Starting accesspoint");
-	WifiAccessPoint.enable(true);
+void Application::reset() {
+	debugapp("Application::reset");
+	cfg.reset(); // reset configuration
+	network.forget_wifi(); // reset wifi
+	delay(1000);
+	restart();
+}
 
-	if (cfg.network.ap.secured) {
-		WifiAccessPoint.config(cfg.network.ap.ssid, cfg.network.ap.password, AUTH_WPA2_PSK);
+bool Application::delayedCMD(String cmd, int delay) {
+	debugapp("Application::delayedCMD cmd: %s - delay: %i", cmd.c_str(), delay);
+	if(cmd.equals("reset")) {
+		_systimer.initializeMs(delay, TimerDelegate(&Application::reset, this)).startOnce();
+	} else if(cmd.equals("restart")) {
+		_systimer.initializeMs(delay, TimerDelegate(&Application::restart, this)).startOnce();
+	} else if(cmd.equals("stopap")) {
+		network.stopAp(2000);
+	} else if(cmd.equals("stopapandrestart")) {
+		network.stopAp(delay);
+		_systimer.initializeMs(delay+4000, TimerDelegate(&Application::restart, this)).startOnce();
+	} else if (cmd.equals("forget_wifi")) {
+		network.startAp();
+		_systimer.initializeMs(delay, TimerDelegate(&AppWIFI::forget_wifi, &network)).startOnce();
 	} else {
-		WifiAccessPoint.config(cfg.network.ap.ssid, "", AUTH_OPEN);
+		return false;
 	}
-
-	debugf("Starting dns service");
-	if (dnsServer == NULL) {
-		dnsServer = new DNSServer;
-		dnsServer->start(DNS_PORT, "*", ApIP);
-	}
-}
-
-
-void networkScanCompleted(bool succeeded, BssList list)
-{
-	if (succeeded)
-	{
-		networks.clear();
-		for (int i = 0; i < list.count(); i++)
-			if (!list[i].hidden && list[i].ssid.length() > 0)
-				networks.add(list[i]);
-	}
-	networks.sort([](const BssInfo& a, const BssInfo& b){ return b.rssi - a.rssi; } );
-	scanning = false;
-}
-
-
-void scanNetworks() {
-	scanning = true;
-	WifiStation.startScan(networkScanCompleted);
-}
-
-
-void connectStartOk() {
-	if(WifiAccessPoint.isEnabled()) {
-		systemTimer.initializeMs(1000, stopAp).startOnce();
-	}
-
-};
-
-
-void connectStartFail() {
-	//couldn`t connect during initial startup
-	startAp();
-};
-
-
-void connectOk(){
-	//successfully connected
-	cfg.network.connection.ssid = WifiStation.getSSID();
-	cfg.network.connection.password = WifiStation.getPassword();
-	cfg.save();
-}
-
-void connectFail() {
-	//fail when trying to connect to new AP
-}
-
-void showLed() {
-	//Main Loop for LEDs
-	rgbwwctrl.show();
-}
-
-void saveRGBWW(RGBWWLed* rgbwwctrl) {
-	debugf("callback from RGBWW lib");
-	HSVK c = rgbwwctrl->getCurrentColor();
-	stored_color.color.h = c.h;
-	stored_color.color.s = c.s;
-	stored_color.color.v = c.v;
-	stored_color.color.k = c.k;
-	stored_color.save();
-}
-
-void setupRGBWW() {
-	rgbwwctrl.init(REDPIN, GREENPIN, BLUEPIN, WWPIN, CWPIN);
-	rgbwwctrl.setAnimationCallback(saveRGBWW);
-    rgbwwctrl.colorutils.setBrightnessCorrection(cfg.color.brightness.red,
-    		cfg.color.brightness.green,
-			cfg.color.brightness.blue,
-			cfg.color.brightness.ww,
-			cfg.color.brightness.cw);
-    rgbwwctrl.colorutils.setHSVcorrection(cfg.color.hsv.red,
-    		cfg.color.hsv.yellow,
-			cfg.color.hsv.green,
-			cfg.color.hsv.cyan,
-			cfg.color.hsv.blue,
-			cfg.color.hsv.magenta);
-    rgbwwctrl.colorutils.setColorMode((RGBWW_COLORMODE)cfg.color.outputmode);
-    rgbwwctrl.colorutils.setHSVmodel((RGBWW_HSVMODEL)cfg.color.hsv.model);
-
-}
-
-
-
-
-
-void init()
-{
-
-	//Serial.println("RGBWW Controller %s", GITVERSION);
-	// Mount file system, in order to work with files
-	spiffs_mount_manual(RBOOT_SPIFFS_0 + 0x40200000, SPIFF_SIZE);
-
-	Serial.begin(SERIAL_BAUD_RATE); // 115200 by default
-	Serial.systemDebugOutput(true);
-	//Serial.commandProcessing(true);
-
-	//disable wifi sleep
-	wifi_set_sleep_type(NONE_SLEEP_T);
-
-	//WifiStation.enable(true);
-	//WifiStation.config("Die (P)fisters", "kannjanedsei2015");
-	//WifiStation.waitConnection(connectStartOk, 15, connectStartFail);
-	//load settings
-	cfg.load();
-
-	//setup everything led related
-    setupRGBWW();
-
-    //load last color
-    stored_color.load();
-    HSVK c = HSVK(stored_color.color.h, stored_color.color.s, stored_color.color.v, stored_color.color.k);
-    rgbwwctrl.setOutput(c);
-
-    //start led loop
-    ledTimer.initializeMs(20, showLed).start();
-
-    //setup networking related
-    //don`t enable/disable again to save eeprom cycles
-    if(!WifiStation.isEnabled()) {
-    	WifiStation.enable(true);
-    }
-    if(WifiAccessPoint.isEnabled()) {
-    	WifiAccessPoint.enable(false);
-    }
-	if (cfg.exist())
-	{
-		debugf("Wifistation SSID %s -  PASS %s", WifiStation.getSSID().c_str(), WifiStation.getPassword().c_str());
-		debugf("Saved SSID %s -  PASS %s", cfg.network.connection.ssid.c_str(), cfg.network.connection.password.c_str());
-		if (cfg.network.connection.ssid.length() > 0 || WifiStation.getSSID().length() > 0) {
-			if (WifiStation.getPassword() != cfg.network.connection.password || WifiStation.getSSID() != cfg.network.connection.ssid) {
-				WifiStation.config(cfg.network.connection.ssid, cfg.network.connection.password);
-			}
-			if (!cfg.network.connection.dhcp && !cfg.network.connection.ip.isNull())
-			{
-
-				//don`t disable if already enabled - save eeprom cycles
-				debugf("setting static ip");
-				if(WifiStation.isEnabledDHCP()) {
-					WifiStation.enableDHCP(false);
-				}
-				//only set if changed - save eeprom cycles
-				if ( !(WifiStation.getIP() == cfg.network.connection.ip) ||
-						!(WifiStation.getNetworkGateway() == cfg.network.connection.gateway) ||
-						!(WifiStation.getNetworkMask() == cfg.network.connection.netmask)) {
-					debugf("updating ip configuration");
-					WifiStation.setIP(cfg.network.connection.ip, cfg.network.connection.netmask, cfg.network.connection.gateway);
-				}
-			} else {
-				debugf("enabling dhcp");
-				//don`t enable again if already enabled - save eeprom cycles
-				if(!WifiStation.isEnabledDHCP()) {
-					WifiStation.enableDHCP(true);
-				}
-			}
-			WifiStation.waitConnection(connectStartOk, 15, connectStartFail);
-		} else {
-			WifiAccessPoint.setIP(ApIP);
-			startAp();
-			scanNetworks();
-		}
-	} else {
-
-		debugf("initial run - setting up accesspoint details");
-		cfg.network.connection.mdnshostname = "rgbww-" + String(system_get_chip_id());
-		cfg.network.ap.ssid = "RGBWW-" + String(system_get_chip_id());
-
-		debugf("setting version details");
-		cfg.save();
-		WifiAccessPoint.setIP(ApIP);
-		startAp();
-		scanNetworks();
-	}
-
-
-	// Run Services on system ready
-	System.onReady(startServices);
-
+	return true;
 }

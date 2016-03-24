@@ -19,43 +19,17 @@
  *
  *
  */
-#ifndef APPLICATION_H_
-#define APPLICATION_H_
+#ifndef APP_DEBUGUTILS_H
+#define APP_DEBUGUTILS_H
 
+#ifdef DEBUG_APP
+	#if DEBUG_APP == 1
+		#define debugapp(fmt, ...) Serial.printf(fmt"\r\n", ##__VA_ARGS__)
+	#else
+		#define debugapp(...)
+	#endif // DEBUG_APP
+#else
+	#define debugapp(...)
+#endif // DEBUG_APP
 
-static const char* fw_version = FWVERSION;
-static const char* fw_git_version = GITVERSION;
-
-// main forward declarations
-class Application {
-
-public:
-	void init();
-	void loop();
-
-	void startServices();
-	void stopServices();
-	void reset();
-	void restart();
-
-	bool delayedCMD(String cmd, int delay);
-	bool isFirstRun();
-
-
-public:
-	AppWIFI network;
-	ApplicationWebserver webserver;
-	APPLedCtrl rgbwwctrl;
-	ApplicationOTA ota;
-	ApplicationSettings cfg;
-
-
-private:
-	Timer _systimer;
-	bool _first_run = false;
-};
-// forward declaration for global vars
-extern Application app;
-
-
-#endif // APPLICATION_H_
+#endif //APP_DEBUGUTILS_H

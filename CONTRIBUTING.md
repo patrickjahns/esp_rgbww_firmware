@@ -13,7 +13,7 @@ __Project Contributing flow__:
 - Build, test your code against a real device
 - Commit changes
 - Push your changes to your fork on github
-- Submit PR to the main Sming repo, __develop__ branch.
+- Submit PR to the main repo, __develop__ branch.
 - Work with other contributors to test your feature and get it merged to _develop_
 
 This is the most common approach for a git-flow:

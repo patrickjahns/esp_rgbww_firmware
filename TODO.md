@@ -9,7 +9,7 @@
   
 - WEB Interface
   - [x] Initial Interface
-  - [ ] backend methods for ajax calls
+  - [x] backend methods for ajax calls
   	- [x] scan networks
   	- [x] get settings
   	- [x] store settings

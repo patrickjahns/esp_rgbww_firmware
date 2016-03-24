@@ -27,19 +27,19 @@
 							</builder>
 							<tool id="cdt.managedbuild.tool.gnu.cross.c.compiler.1168221903" name="Cross GCC Compiler" superClass="cdt.managedbuild.tool.gnu.cross.c.compiler">
 								<option id="gnu.c.compiler.option.include.paths.357494572" name="Include paths (-I)" superClass="gnu.c.compiler.option.include.paths" useByScannerDiscovery="false" valueType="includePath">
-									<listOptionValue builtIn="false" value="C:/tools/Sming/Sming"/>
-									<listOptionValue builtIn="false" value="C:/tools/Sming/Sming/system/include"/>
-									<listOptionValue builtIn="false" value="C:/tools/Sming/Sming/Libraries"/>
-									<listOptionValue builtIn="false" value="C:/Espressif/sdk/include"/>
+									<listOptionValue builtIn="false" value="C:/opt/Sming/Sming"/>
+									<listOptionValue builtIn="false" value="&quot;C:\Espressif\ESP8266_SDK\include&quot;"/>
+									<listOptionValue builtIn="false" value="C:/opt/Sming/Sming/Libraries"/>
+									<listOptionValue builtIn="false" value="C:/opt/Sming/Sming/system/include"/>
 								</option>
 								<inputType id="cdt.managedbuild.tool.gnu.c.compiler.input.313321806" superClass="cdt.managedbuild.tool.gnu.c.compiler.input"/>
 							</tool>
 							<tool id="cdt.managedbuild.tool.gnu.cross.cpp.compiler.1999763015" name="Cross G++ Compiler" superClass="cdt.managedbuild.tool.gnu.cross.cpp.compiler">
 								<option id="gnu.cpp.compiler.option.include.paths.611746109" name="Include paths (-I)" superClass="gnu.cpp.compiler.option.include.paths" useByScannerDiscovery="false" valueType="includePath">
-									<listOptionValue builtIn="false" value="C:/tools/Sming/Sming"/>
-									<listOptionValue builtIn="false" value="C:/tools/Sming/Sming/system/include"/>
-									<listOptionValue builtIn="false" value="C:/tools/Sming/Sming/Libraries"/>
-									<listOptionValue builtIn="false" value="C:/Espressif/sdk/include"/>
+									<listOptionValue builtIn="false" value="C:/opt/Sming/Sming"/>
+									<listOptionValue builtIn="false" value="C:/opt/Sming/Sming/system/include"/>
+									<listOptionValue builtIn="false" value="C:/opt/Sming/Sming/Libraries"/>
+									<listOptionValue builtIn="false" value="&quot;C:\Espressif\ESP8266_SDK\include&quot;"/>
 								</option>
 								<inputType id="cdt.managedbuild.tool.gnu.cpp.compiler.input.1330530366" superClass="cdt.managedbuild.tool.gnu.cpp.compiler.input"/>
 							</tool>
@@ -55,12 +55,82 @@
 							<tool id="cdt.managedbuild.tool.gnu.cross.archiver.525412186" name="Cross GCC Archiver" superClass="cdt.managedbuild.tool.gnu.cross.archiver"/>
 							<tool id="cdt.managedbuild.tool.gnu.cross.assembler.587940548" name="Cross GCC Assembler" superClass="cdt.managedbuild.tool.gnu.cross.assembler">
 								<option id="gnu.both.asm.option.include.paths.1067006329" name="Include paths (-I)" superClass="gnu.both.asm.option.include.paths" valueType="includePath">
-									<listOptionValue builtIn="false" value="C:/tools/Sming/Sming"/>
-									<listOptionValue builtIn="false" value="C:/tools/Sming/Sming/system/include"/>
-									<listOptionValue builtIn="false" value="C:/tools/Sming/Sming/Libraries"/>
-									<listOptionValue builtIn="false" value="C:/Espressif/sdk/include"/>
+									<listOptionValue builtIn="false" value="C:/opt/Sming/Sming"/>
+									<listOptionValue builtIn="false" value="C:/opt/Sming/Sming/Libraries"/>
+									<listOptionValue builtIn="false" value="C:/opt/Sming/Sming/system/include"/>
+									<listOptionValue builtIn="false" value="&quot;C:\Espressif\ESP8266_SDK\include&quot;"/>
 								</option>
 								<inputType id="cdt.managedbuild.tool.gnu.assembler.input.651581712" superClass="cdt.managedbuild.tool.gnu.assembler.input"/>
+							</tool>
+						</toolChain>
+					</folderInfo>
+					<sourceEntries>
+						<entry excluding="RGBWWLed|RGBWWLed Library" flags="VALUE_WORKSPACE_PATH|RESOLVED" kind="sourcePath" name=""/>
+					</sourceEntries>
+				</configuration>
+			</storageModule>
+			<storageModule moduleId="org.eclipse.cdt.core.externalSettings"/>
+		</cconfiguration>
+		<cconfiguration id="cdt.managedbuild.toolchain.gnu.mingw.base.1135534147.890899056">
+			<storageModule buildSystemId="org.eclipse.cdt.managedbuilder.core.configurationDataProvider" id="cdt.managedbuild.toolchain.gnu.mingw.base.1135534147.890899056" moduleId="org.eclipse.cdt.core.settings" name="SMING_RTOS">
+				<externalSettings/>
+				<extensions>
+					<extension id="org.eclipse.cdt.core.ELF" point="org.eclipse.cdt.core.BinaryParser"/>
+					<extension id="org.eclipse.cdt.core.GCCErrorParser" point="org.eclipse.cdt.core.ErrorParser"/>
+					<extension id="org.eclipse.cdt.core.GASErrorParser" point="org.eclipse.cdt.core.ErrorParser"/>
+					<extension id="org.eclipse.cdt.core.GLDErrorParser" point="org.eclipse.cdt.core.ErrorParser"/>
+					<extension id="org.eclipse.cdt.core.GmakeErrorParser" point="org.eclipse.cdt.core.ErrorParser"/>
+					<extension id="org.eclipse.cdt.core.CWDLocator" point="org.eclipse.cdt.core.ErrorParser"/>
+				</extensions>
+			</storageModule>
+			<storageModule moduleId="cdtBuildSystem" version="4.0.0">
+				<configuration artifactName="${ProjName}" buildProperties="" description="" id="cdt.managedbuild.toolchain.gnu.mingw.base.1135534147.890899056" name="SMING_RTOS" parent="org.eclipse.cdt.build.core.emptycfg">
+					<folderInfo id="cdt.managedbuild.toolchain.gnu.mingw.base.1135534147.890899056." name="/" resourcePath="">
+						<toolChain id="cdt.managedbuild.toolchain.gnu.cross.base.1745263014" name="Cross GCC" superClass="cdt.managedbuild.toolchain.gnu.cross.base">
+							<option id="cdt.managedbuild.option.gnu.cross.prefix.753325853" name="Prefix" superClass="cdt.managedbuild.option.gnu.cross.prefix"/>
+							<option id="cdt.managedbuild.option.gnu.cross.path.1515718179" name="Path" superClass="cdt.managedbuild.option.gnu.cross.path"/>
+							<targetPlatform archList="all" binaryParser="org.eclipse.cdt.core.ELF" id="cdt.managedbuild.targetPlatform.gnu.cross.372135950" isAbstract="false" osList="all" superClass="cdt.managedbuild.targetPlatform.gnu.cross"/>
+							<builder autoBuildTarget="all" cleanBuildTarget="clean" enableAutoBuild="false" enableCleanBuild="true" enabledIncrementalBuild="true" id="cdt.managedbuild.builder.gnu.cross.932576034" incrementalBuildTarget="all" keepEnvironmentInBuildfile="false" managedBuildOn="false" name="Gnu Make Builder" parallelBuildOn="false" superClass="cdt.managedbuild.builder.gnu.cross">
+								<outputEntries>
+									<entry flags="VALUE_WORKSPACE_PATH|RESOLVED" kind="outputPath" name=""/>
+								</outputEntries>
+							</builder>
+							<tool id="cdt.managedbuild.tool.gnu.cross.c.compiler.2041952930" name="Cross GCC Compiler" superClass="cdt.managedbuild.tool.gnu.cross.c.compiler">
+								<option id="gnu.c.compiler.option.include.paths.1704083951" name="Include paths (-I)" superClass="gnu.c.compiler.option.include.paths" useByScannerDiscovery="false" valueType="includePath">
+									<listOptionValue builtIn="false" value="C:/opt/Sming/Sming"/>
+									<listOptionValue builtIn="false" value="&quot;C:\Espressif\ESP8266_SDK\include&quot;"/>
+									<listOptionValue builtIn="false" value="C:/opt/Sming/Sming/Libraries"/>
+									<listOptionValue builtIn="false" value="C:/opt/Sming/Sming/system/include"/>
+								</option>
+								<inputType id="cdt.managedbuild.tool.gnu.c.compiler.input.645509635" superClass="cdt.managedbuild.tool.gnu.c.compiler.input"/>
+							</tool>
+							<tool id="cdt.managedbuild.tool.gnu.cross.cpp.compiler.2142914896" name="Cross G++ Compiler" superClass="cdt.managedbuild.tool.gnu.cross.cpp.compiler">
+								<option id="gnu.cpp.compiler.option.include.paths.531793762" name="Include paths (-I)" superClass="gnu.cpp.compiler.option.include.paths" useByScannerDiscovery="false" valueType="includePath">
+									<listOptionValue builtIn="false" value="C:/opt/Sming/Sming"/>
+									<listOptionValue builtIn="false" value="C:/opt/Sming/Sming/system/include"/>
+									<listOptionValue builtIn="false" value="C:/opt/Sming/Sming/Libraries"/>
+									<listOptionValue builtIn="false" value="&quot;C:\Espressif\ESP8266_SDK\include&quot;"/>
+								</option>
+								<inputType id="cdt.managedbuild.tool.gnu.cpp.compiler.input.50552811" superClass="cdt.managedbuild.tool.gnu.cpp.compiler.input"/>
+							</tool>
+							<tool id="cdt.managedbuild.tool.gnu.cross.c.linker.385805708" name="Cross GCC Linker" superClass="cdt.managedbuild.tool.gnu.cross.c.linker"/>
+							<tool id="cdt.managedbuild.tool.gnu.cross.cpp.linker.308007157" name="Cross G++ Linker" superClass="cdt.managedbuild.tool.gnu.cross.cpp.linker">
+								<option id="gnu.cpp.link.option.libs.1416042067" name="Libraries (-l)" superClass="gnu.cpp.link.option.libs"/>
+								<option id="gnu.cpp.link.option.paths.2034075036" name="Library search path (-L)" superClass="gnu.cpp.link.option.paths"/>
+								<inputType id="cdt.managedbuild.tool.gnu.cpp.linker.input.1643167532" superClass="cdt.managedbuild.tool.gnu.cpp.linker.input">
+									<additionalInput kind="additionalinputdependency" paths="$(USER_OBJS)"/>
+									<additionalInput kind="additionalinput" paths="$(LIBS)"/>
+								</inputType>
+							</tool>
+							<tool id="cdt.managedbuild.tool.gnu.cross.archiver.2126212553" name="Cross GCC Archiver" superClass="cdt.managedbuild.tool.gnu.cross.archiver"/>
+							<tool id="cdt.managedbuild.tool.gnu.cross.assembler.1513232057" name="Cross GCC Assembler" superClass="cdt.managedbuild.tool.gnu.cross.assembler">
+								<option id="gnu.both.asm.option.include.paths.1635786357" name="Include paths (-I)" superClass="gnu.both.asm.option.include.paths" valueType="includePath">
+									<listOptionValue builtIn="false" value="C:/opt/Sming/Sming"/>
+									<listOptionValue builtIn="false" value="C:/opt/Sming/Sming/Libraries"/>
+									<listOptionValue builtIn="false" value="C:/opt/Sming/Sming/system/include"/>
+									<listOptionValue builtIn="false" value="&quot;C:\Espressif\ESP8266_SDK\include&quot;"/>
+								</option>
+								<inputType id="cdt.managedbuild.tool.gnu.assembler.input.2095279080" superClass="cdt.managedbuild.tool.gnu.assembler.input"/>
 							</tool>
 						</toolChain>
 					</folderInfo>

@@ -1,4 +1,27 @@
+## Changelog
+0.2.1 (24.03.2016)
+  * improved API handling
 
--------------------------
-0.1.0 (11.03.2016)
+0.2.0 (23.03.2016)
+  * major restructuring to improve
+    - application layout
+    - wifi handling
+    - startup handling
+    - debugging
+
+0.1.3 (21.03.2016)
+  * improved OTA functionality
+
+0.1.2 (20.03.2016)
+  * added OTA functionality  
+  * updated API endpoints  
+
+0.1.1 (11.03.2016) 
+  * improved wifi handling
+  * improved configuration handling
+  
+0.1.0 (10.03.2016)
+  * First version based on SMING
+  * Basic Application structure
+  * Basic API implementation
   * alpha relaese of firmware

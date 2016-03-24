@@ -24,16 +24,18 @@
 #define RGBWWCTRL_H_
 
 //default defines
-
+#define DEFAULT_AP_IP "192.168.4.1"
 #define DEFAULT_AP_SECURED false
 #define DEFAULT_AP_PASSWORD "rgbwwctrl"
+#define DEFAULT_AP_SSIDPREFIX "RGBWW"
 #define DEFAULT_SETTINGS_SECURED false
 #define DEFAULT_SETTINGS_PASSWORD "rgbwwctrl"
-
+#define DEFAULT_CONNECTION_RETRIES 4
 
 #define DEFAULT_TCP_PORT 12000
 #define DEFAULT_UDP_PORT 13000
 
+// RGBWW related
 #define DEFAULT_COLORTEMP_WW 2700
 #define DEFAULT_COLORTEMP_CW 6000
 
@@ -44,16 +46,23 @@
 #define CWPIN 4
 
 #define RGBWW_USE_ESP_HWPWM
-#define DEBUG_RGBWW TRUE
+
+// Debugging
+#define DEBUG_RGBWW 1
+#define DEBUG_APP 1
 
 //includes
 #include <user_config.h>
+#include <debugutils.h>
 #include <SmingCore/SmingCore.h>
 #include <Libraries/RGBWWLed/RGBWWLed.h>
 #include <otaupdate.h>
 #include <config.h>
-#include <application.h>
+#include <ledctrl.h>
+#include <networking.h>
 #include <webserver.h>
+#include <application.h>
+
 
 
 #endif /* RGBWWCTRL_H_ */
