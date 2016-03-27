@@ -11,7 +11,7 @@ This repository provides the firmware for the esp_rgbww_controller board
  * Security (change default AP password and Password for accessing API endpoints)
 
 ## Index
-Most information about installation, setup and usage guides are provided in the Wiki
+Most information about installation (flashing), setup and usage guides are provided via the Wiki
 https://github.com/patrickjahns/esp_rgbww_firmware/wiki
 
 __Quicklinks__
@@ -30,6 +30,10 @@ __Quicklinks__
 - [Contributing](#contributing)
 - [Useful Links and Sources](#links)
 
+
+## Firmware installation/flashing
+Precompiled binaries are provided via github. It is also possible to compile the firmware images yourself. 
+For more information and instructions please see [the Wiki](https://github.com/patrickjahns/esp_rgbww_firmware/wiki/1.1-Flashing)
 
 
 ## Contributing
