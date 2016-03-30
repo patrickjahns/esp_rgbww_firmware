@@ -7,8 +7,22 @@ include ./Makefile-user.mk
 
 #### GIT VERSION Information ##### 
 GIT_VERSION := $(shell git describe --abbrev=4 --dirty --always --tags)
+ifndef GIT_VERSION
+$(info no GIT_VERSION available, using unknown)
+GIT_VERSION = "unknown"
+endif
+
 GIT_DATE := $(firstword $(shell git --no-pager show --date=short --format="%ad" --name-only))
+ifndef GIT_DATE
+$(info no GIT_DATE available, using unknown)
+GIT_DATE = "unknown"
+endif
+
 FW_VERSION := `cat VERSION`
+ifndef FW_VERSION
+$(error can not find VERSION file - please ensure the source code is complete)
+endif
+
 
 USER_CFLAGS += -DGITVERSION=\"$(GIT_VERSION)\" -DGITDATE=\"$(GIT_DATE)\" -DFWVERSION=\"$(FW_VERSION)\" 
 
