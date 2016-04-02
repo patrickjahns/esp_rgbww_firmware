@@ -26,27 +26,35 @@ Application app;
 
 // Sming Framework INIT method - called during boot
 void init() {
-	Serial.printf("RGBWW Controller v %s\r\n", fw_version);
-	app.init();
-}
-
-// seperated application init
-void Application::init() {
-
-
 	// Mount file system, in order to work with files
 	spiffs_mount_manual(RBOOT_SPIFFS_0 + 0x40200000, SPIFF_SIZE);
 
 	Serial.begin(SERIAL_BAUD_RATE); // 115200 by default
 	Serial.systemDebugOutput(false); // don`t show system debug messages
 
+	// set CLR pin to input
+	pinMode(CLEAR_PIN, INPUT);
+
+	// seperated application init
+	app.init();
+
+	// Run Services on system ready
+	System.onReady(SystemReadyDelegate(&Application::startServices, &app));
+}
+
+
+void Application::init() {
+
+	Serial.printf("RGBWW Controller v %s\r\n", fw_version);
 	//load settings
-	//TODO check for reset here and delete file or reload file depending on
-
-
+	Serial.println();
+	if(digitalRead(CLEAR_PIN) < 1) {
+		Serial.println("CLR button low - resetting settings");
+		cfg.reset();
+	}
 
 	if (cfg.exist()) {
-		cfg.load(true);
+		cfg.load();
 	} else {
 		debugapp("Application::init - it is first run");
 		_first_run = true;
@@ -58,10 +66,6 @@ void Application::init() {
 
 	// initialize networking
 	network.init();
-
-	// Run Services on system ready
-	System.onReady(SystemReadyDelegate(&Application::startServices, this));
-
 
 }
 

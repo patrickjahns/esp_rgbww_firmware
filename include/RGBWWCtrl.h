@@ -24,6 +24,8 @@
 #define RGBWWCTRL_H_
 
 //default defines
+
+#define CLEAR_PIN 16
 #define DEFAULT_AP_IP "192.168.4.1"
 #define DEFAULT_AP_SECURED false
 #define DEFAULT_AP_PASSWORD "rgbwwctrl"
