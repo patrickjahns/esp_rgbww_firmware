@@ -39,6 +39,7 @@ void WebappOTA::setCallback(webappUpdateDelegate callback) {
 
 
 void WebappOTA::addItem(String filename, String url) {
+	debugapp("WebappOTA::addItem");
 	webappUpdateItem it;
 	it.filename = filename;
 	it.url = url;
@@ -48,6 +49,7 @@ void WebappOTA::addItem(String filename, String url) {
 
 void WebappOTA::start() {
 	//backup files
+	debugapp("WebappOTA::start");
 	for (int i = 0; i < items.count(); i++) {
 		if(fileExist(items[i].filename)) {
 			String backup = items[i].filename + ".bk";
@@ -65,6 +67,7 @@ void WebappOTA::start() {
 
 
 void WebappOTA::finished(bool result) {
+	debugapp("WebappOTA::finished");
 	timer.stop();
 	if(delegate)
 	{
@@ -80,6 +83,7 @@ void WebappOTA::finished(bool result) {
 
 
 void WebappOTA::success() {
+	debugapp("WebappOTA::success");
 	//delete backup files
 	for (int i = 0; i < items.count(); i++) {
 		String backup = items[i].filename + ".bk";
@@ -92,6 +96,7 @@ void WebappOTA::success() {
 
 
 void WebappOTA::failure() {
+	debugapp("WebappOTA::failure");
 	for (int i = 0; i < items.count(); i++) {
 		if(fileExist(items[i].filename)) {
 			fileDelete(items[i].filename);
@@ -111,6 +116,7 @@ void WebappOTA::failure() {
 
 
 void WebappOTA::onTimer() {
+	debugapp("WebappOTA::onTimer");
 	if (TcpClient::isProcessing()) return;
 
 	if (TcpClient::getConnectionState() == eTCS_Successful) {
@@ -142,6 +148,7 @@ void WebappOTA::onTimer() {
  ***************************************************************/
 
 void ApplicationOTA::cleanupOTAafterReset() {
+	debugapp("ApplicationOTA::cleanupOTAafterReset");
 	//TODO: rewrite so we scan for *.bk files and restore them
 	bool cleanup = false;
     if (fileExist("init.html.bk")) {
@@ -171,6 +178,7 @@ void ApplicationOTA::cleanupOTAafterReset() {
 
 
 void ApplicationOTA::rBootCallback(bool result) {
+	debugapp("ApplicationOTA::rBootCallback");
 	if(result == true) {
 		fwstatus = OTASTATUS::OTA_SUCCESS;
 		Serial.println("Firmware update successfull");
@@ -183,6 +191,7 @@ void ApplicationOTA::rBootCallback(bool result) {
 
 
 void ApplicationOTA::webappCallback(bool result) {
+	debugapp("ApplicationOTA::webappCallback");
 	if(result == true) {
 		webappstatus = OTASTATUS::OTA_SUCCESS;
 		Serial.println("Webapp update successfull");
@@ -195,17 +204,22 @@ void ApplicationOTA::webappCallback(bool result) {
 
 
 void ApplicationOTA::finished() {
-
+	debugapp("ApplicationOTA::finished");
 	if(fwstatus == OTASTATUS::OTA_PROCESSING || webappstatus == OTASTATUS::OTA_PROCESSING) return;
 	if((fwstatus != OTASTATUS::OTA_NOT_UPDATING && fwstatus == OTASTATUS::OTA_FAILED) ||
 			(webappstatus != OTASTATUS::OTA_NOT_UPDATING && webappstatus == OTASTATUS::OTA_FAILED)) {
-
-		webappUpdater->failure();
+		if(webappstatus != OTASTATUS::OTA_NOT_UPDATING) {
+			webappUpdater->failure();
+		}
 		Serial.println("OTA failed");
 
 	} else {
-		webappUpdater->success();
-		rboot_set_current_rom(rom_slot);
+		if(webappstatus != OTASTATUS::OTA_NOT_UPDATING) {
+			webappUpdater->success();
+		}
+		if(fwstatus != OTASTATUS::OTA_NOT_UPDATING) {
+			rboot_set_current_rom(rom_slot);
+		}
 		Serial.println("OTA successful");
 		// restart after 10s - gives clients enough time
 		// to fetch status and init restart themselves
@@ -215,6 +229,8 @@ void ApplicationOTA::finished() {
 }
 
 void ApplicationOTA::start() {
+	debugapp("ApplicationOTA::start");
+	Serial.println("Starting OTA ...");
 	if(fwstatus == OTASTATUS::OTA_PROCESSING) {
 		startFirmwareOTA();
 	}
@@ -226,6 +242,7 @@ void ApplicationOTA::start() {
 
 
 void ApplicationOTA::reset() {
+	debugapp("ApplicationOTA::reset");
 	fwstatus = OTASTATUS::OTA_NOT_UPDATING;
 	webappstatus = OTASTATUS::OTA_NOT_UPDATING;
 	if(otaUpdater) delete otaUpdater;
@@ -264,6 +281,7 @@ OTASTATUS ApplicationOTA::getStatus() {
 
 
 void ApplicationOTA::startFirmwareOTA() {
+	debugapp("ApplicationOTA::startFirmwareOTA");
 	Serial.println("Starting Firmware update...");
 	// start update
 	otaUpdater->start();
@@ -271,6 +289,7 @@ void ApplicationOTA::startFirmwareOTA() {
 
 
 void ApplicationOTA::initFirmwareUpdate(String url) {
+	debugapp("ApplicationOTA::initFirmwareUpdate");
 	uint8 slot;
 	rboot_config bootconf;
 	fwstatus = OTASTATUS::OTA_PROCESSING;
@@ -287,13 +306,15 @@ void ApplicationOTA::initFirmwareUpdate(String url) {
 
 
 void ApplicationOTA::startWebappOTA() {
-	Serial.println("Staring webapp update.... ");
+	debugapp("ApplicationOTA::startWebappOTA");
+	Serial.println("Starting webapp update.... ");
 	// start webappupdate
 	webappUpdater->start();
 }
 
 
 void ApplicationOTA::initWebappUpdate(String urls[], int count) {
+	debugapp("ApplicationOTA::initWebappUpdate");
 	webappstatus = OTASTATUS::OTA_PROCESSING;
 	if(webappUpdater) delete webappUpdater;
 	webappUpdater = new WebappOTA();
