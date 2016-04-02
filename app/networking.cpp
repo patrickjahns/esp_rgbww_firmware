@@ -190,8 +190,8 @@ void AppWIFI::_STAGotIP(IPAddress ip, IPAddress mask, IPAddress gateway) {
 
 
 void AppWIFI::stopAp(int delay) {
-	debugapp("AppWIFI::stopAp delay %i", delay);
 	if(WifiAccessPoint.isEnabled()) {
+		debugapp("AppWIFI::stopAp delay %i", delay);
 		_timer.initializeMs(delay, TimerDelegate(&AppWIFI::stopAp, this)).startOnce();
 	}
 }
