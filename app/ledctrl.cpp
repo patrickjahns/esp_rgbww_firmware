@@ -22,7 +22,7 @@
 #include <RGBWWCtrl.h>
 
 void APPLedCtrl::init() {
-	RGBWWLed::init(REDPIN, GREENPIN, BLUEPIN, WWPIN, CWPIN);
+	RGBWWLed::init(REDPIN, GREENPIN, BLUEPIN, WWPIN, CWPIN, PWM_FREQUENCY);
 	setAnimationCallback(led_callback);
 	setup();
 	color.load();

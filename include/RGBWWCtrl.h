@@ -47,6 +47,8 @@
 #define WWPIN 5
 #define CWPIN 4
 
+#define PWM_FREQUENCY 300
+
 #define RGBWW_USE_ESP_HWPWM
 
 // Debugging
