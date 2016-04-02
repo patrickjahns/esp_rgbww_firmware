@@ -186,7 +186,7 @@ void ApplicationWebserver::onConfig(HttpRequest &request, HttpResponse &response
 		String error_msg = getApiCodeMsg(API_CODES::API_BAD_REQUEST);
 		DynamicJsonBuffer jsonBuffer;
 		JsonObject& root = jsonBuffer.parseObject(request.getBody());
-		//root.prettyPrintTo(Serial);
+		root.prettyPrintTo(Serial);
 		bool ip_updated = false;
 		bool color_updated = false;
 		bool ap_updated = false;
@@ -252,7 +252,7 @@ void ApplicationWebserver::onConfig(HttpRequest &request, HttpResponse &response
 					}
 				}
 				if(root["network"]["ap"]["secured"].success()) {
-						if (root["network"]["ap"]["secured"]){
+						if (root["network"]["ap"]["secured"].as<bool>()){
 							if(root["network"]["ap"]["password"].success()) {
 								if (root["network"]["ap"]["password"] != app.cfg.network.ap.password) {
 									app.cfg.network.ap.secured = root["network"]["ap"]["secured"];
@@ -446,21 +446,19 @@ void ApplicationWebserver::onConfig(HttpRequest &request, HttpResponse &response
 		if(root["security"].success())
 		{
 			if(root["security"]["api_secured"].success()){
-				app.cfg.general.api_secured = root["security"]["api_secured"];
-				if (root["security"]["api_secured"]) {
+				if (root["security"]["api_secured"].as<bool>()) {
 					if(root["security"]["api_password"].success()){
 						if(root["security"]["api_password"] != app.cfg.general.api_password) {
-
+							app.cfg.general.api_secured = root["security"]["api_secured"];
 							app.cfg.general.api_password = root["security"]["api_password"].asString();
 						}
+
+					} else {
+						error = true;
+						error_msg = "missing password to secure settings";
 					}
-				} else {
-					error = true;
-					error_msg = "missing password to secure settings";
 				}
 			}
-
-
 		}
 
 
@@ -729,7 +727,7 @@ void ApplicationWebserver::onConnect(HttpRequest &request, HttpResponse &respons
 	{
 
 		String body = request.getBody();
-		if ( body == NULL || body.length() > 64) {
+		if ( body == NULL ) {
 
 			sendApiCode(response, API_CODES::API_BAD_REQUEST);
 			return;
@@ -737,9 +735,13 @@ void ApplicationWebserver::onConnect(HttpRequest &request, HttpResponse &respons
 		}
 		DynamicJsonBuffer jsonBuffer;
 		JsonObject& root = jsonBuffer.parseObject(body);
-		if (root["ssid"].success() && root["password"].success()) {
-			String ssid = root["ssid"].asString();
-			String password = root["password"].asString();
+		String ssid = "";
+		String password = "";
+		if (root["ssid"].success()) {
+			ssid = root["ssid"].asString();
+			if(root["password"].success()) {
+				password = root["password"].asString();
+			}
 			debugapp("ssid %s - pass %s", ssid.c_str(), password.c_str());
 			app.network.connect(ssid, password, true);
 			sendApiCode(response, API_CODES::API_SUCCESS);
@@ -781,7 +783,7 @@ void ApplicationWebserver::onSystemReq(HttpRequest &request, HttpResponse &respo
 
 	bool error = false;
 	String body = request.getBody();
-	if ( body == NULL || body.length() > 64)
+	if ( body == NULL )
 	{
 		sendApiCode(response, API_CODES::API_BAD_REQUEST);
 		return;
