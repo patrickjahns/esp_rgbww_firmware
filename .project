@@ -4,7 +4,6 @@
 	<comment></comment>
 	<projects>
 		<project>RGBWWLed Library</project>
-		<project>SmingFramework</project>
 	</projects>
 	<buildSpec>
 		<buildCommand>
