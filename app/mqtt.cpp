@@ -29,7 +29,9 @@ ApplicationMQTTClient::ApplicationMQTTClient() {
 
 ApplicationMQTTClient::~ApplicationMQTTClient() {
 	// cleanup before destroying object
-	delete mqtt;
+	if(mqtt != NULL) {
+		delete mqtt;
+	}
 }
 
 
