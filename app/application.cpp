@@ -78,10 +78,12 @@ void Application::startServices()
 {
 	rgbwwctrl.start();
 	webserver.start();
-
+	if(cfg.network.mqtt.enabled) {
+		mqttclient.start();
+	}
 	//start TCP
 	//start UDP
-	//start mqtt client
+
 }
 
 

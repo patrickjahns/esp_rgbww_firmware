@@ -19,44 +19,26 @@
  *
  *
  */
-#ifndef APPLICATION_H_
-#define APPLICATION_H_
+#ifndef APP_MQTTCLIENT_H_
+#define APP_MQTTCLIENT_H_
 
 
-static const char* fw_version = FWVERSION;
-static const char* fw_git_version = GITVERSION;
-
-// main forward declarations
-class Application {
+class ApplicationMQTTClient{
 
 public:
-	void init();
-	void loop();
+	ApplicationMQTTClient();
+	virtual ~ApplicationMQTTClient();
 
-	void startServices();
-	void stopServices();
-	void reset();
-	void restart();
+	void start();
+	void stop();
+	bool isRunning();
 
-	bool delayedCMD(String cmd, int delay);
-	bool isFirstRun();
-
-
-public:
-	AppWIFI network;
-	ApplicationWebserver webserver;
-	APPLedCtrl rgbwwctrl;
-	ApplicationOTA ota;
-	ApplicationSettings cfg;
-	ApplicationMQTTClient mqttclient;
-
+	void onMessageReceived(String topic, String message);
 
 private:
-	Timer _systimer;
-	bool _first_run = false;
+	MqttClient* mqtt;
+	bool _running = false;
+
 };
-// forward declaration for global vars
-extern Application app;
 
-
-#endif // APPLICATION_H_
+#endif // APP_MQTTCLIENT_H_

@@ -20,3 +20,39 @@
  *
  */
 #include <RGBWWCtrl.h>
+
+
+ApplicationMQTTClient::ApplicationMQTTClient() {
+	mqtt = NULL;
+}
+
+
+ApplicationMQTTClient::~ApplicationMQTTClient() {
+	// cleanup before destroying object
+	delete mqtt;
+}
+
+
+void ApplicationMQTTClient::start(){
+	Serial.println("Start MQTT");
+	if (mqtt != NULL) {
+		 delete mqtt;
+	}
+	//TODO: add settings from config
+	mqtt = new MqttClient("192.168.1.1", MqttStringSubscriptionCallback(&ApplicationMQTTClient::onMessageReceived, this));
+}
+
+void ApplicationMQTTClient::stop() {
+	 delete mqtt;
+	 mqtt = NULL;
+}
+
+bool ApplicationMQTTClient::isRunning() {
+	return (mqtt != NULL);
+}
+
+void ApplicationMQTTClient::onMessageReceived(String topic, String message) {
+	Serial.print(topic);
+	Serial.print(":\r\n\t"); // Prettify alignment for printing
+	Serial.println(message);
+}

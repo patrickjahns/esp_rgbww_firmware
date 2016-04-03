@@ -65,6 +65,7 @@
 #include <ledctrl.h>
 #include <networking.h>
 #include <webserver.h>
+#include <mqtt.h>
 #include <application.h>
 
 
