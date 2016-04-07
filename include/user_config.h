@@ -16,6 +16,7 @@ extern "C" {
 	#define __CORRECT_ISO_CPP_STDLIB_H_PROTO
 	#include <limits.h>
 	#include <stdint.h>
+	#include <stddef.h>
 
 	// Override c_types.h include and remove buggy espconn
 	#define _C_TYPES_H_
