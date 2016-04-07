@@ -1,9 +1,16 @@
 ## Changelog
+0.2.2 (02.04.2016)
+  * BUGFIX: OTA would not set proper rom
+  * BUGFIX: save settings not working
+  * add PWM_FREQUENCY to defines
+  * improve Makefile for handling non git versions
+  * add clear button
+
 0.2.1 (24.03.2016)
   * improved API handling
 
 0.2.0 (23.03.2016)
-  * major restructuring to improve
+  * major restructuring to improve:
     - application layout
     - wifi handling
     - startup handling
