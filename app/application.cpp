@@ -26,6 +26,7 @@ Application app;
 
 // Sming Framework INIT method - called during boot
 void init() {
+
 	// Mount file system, in order to work with files
 	spiffs_mount_manual(RBOOT_SPIFFS_0 + 0x40200000, SPIFF_SIZE);
 
@@ -60,6 +61,10 @@ void Application::init() {
 		_first_run = true;
 		cfg.save();
 	}
+
+	// cleanup OTA - fragments might be there when OTA
+	// failed unexpectedly
+	ota.cleanupOTAafterReset();
 
 	// initialize led ctrl
 	rgbwwctrl.init();
