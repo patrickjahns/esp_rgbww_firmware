@@ -29,7 +29,7 @@ struct ColorStorage
 	int h = 0;
 	int s = 0;
 	int v = 0;
-	int k = 0;
+	int ct = 0;
 
 
 	void load(bool print = false)
@@ -44,7 +44,7 @@ struct ColorStorage
 			h = root["h"];
 			s = root["s"];
 			v = root["v"];
-			k = root["k"];
+			ct = root["ct"];
 			if (print) {
 				root.prettyPrintTo(Serial);
 			}
@@ -59,7 +59,7 @@ struct ColorStorage
 		root["h"] = h;
 		root["s"] = s;
 		root["v"] = v;
-		root["k"] = k;
+		root["ct"] = ct;
 		String rootString;
 		if (print) {
 			root.prettyPrintTo(Serial);
@@ -81,7 +81,9 @@ public:
 
 	void start();
 	void stop();
-	void save_color();
+	void color_save();
+	void color_reset();
+	void test_channels();
 
 	void show_led();
 	static void led_callback(RGBWWLed* rgbwwctrl);

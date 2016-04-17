@@ -38,6 +38,8 @@ public:
 	void reset();
 	void restart();
 
+	void clearButton();
+
 	bool delayedCMD(String cmd, int delay);
 	bool isFirstRun();
 

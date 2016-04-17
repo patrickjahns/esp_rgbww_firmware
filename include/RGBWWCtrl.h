@@ -47,19 +47,18 @@
 #define WWPIN 5
 #define CWPIN 4
 
-#define PWM_FREQUENCY 300
-
+#define PWM_FREQUENCY 339
 #define RGBWW_USE_ESP_HWPWM
 
+
 // Debugging
-#define DEBUG_RGBWW 1
 #define DEBUG_APP 1
 
 //includes
 #include <user_config.h>
 #include <debugutils.h>
+#include <RGBWWLed/RGBWWLed.h>
 #include <SmingCore/SmingCore.h>
-#include <Libraries/RGBWWLed/RGBWWLed.h>
 #include <otaupdate.h>
 #include <config.h>
 #include <ledctrl.h>

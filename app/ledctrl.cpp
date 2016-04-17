@@ -22,15 +22,20 @@
 #include <RGBWWCtrl.h>
 
 void APPLedCtrl::init() {
+	debugapp("APPLedCtrl::init");
 	RGBWWLed::init(REDPIN, GREENPIN, BLUEPIN, WWPIN, CWPIN, PWM_FREQUENCY);
 	setAnimationCallback(led_callback);
 	setup();
 	color.load();
-    HSVK c = HSVK(color.h, color.s, color.v, color.k);
-    setOutput(c);
+	debugapp("H: %i | s: %i | v: %i | ct: %i", color.h, color.s, color.v, color.ct);
+    HSVCT s = HSVCT(color.h, color.s, 0, color.ct);
+	HSVCT c = HSVCT(color.h, color.s, color.v, color.ct);
+    fadeHSV(s, c, 700); //fade to color in 700ms
 }
 
 void APPLedCtrl::setup() {
+	debugapp("APPLedCtrl::setup");
+
     colorutils.setBrightnessCorrection(app.cfg.color.brightness.red,
     		app.cfg.color.brightness.green,
 			app.cfg.color.brightness.blue,
@@ -42,34 +47,71 @@ void APPLedCtrl::setup() {
 			app.cfg.color.hsv.cyan,
 			app.cfg.color.hsv.blue,
 			app.cfg.color.hsv.magenta);
+
     colorutils.setColorMode((RGBWW_COLORMODE)app.cfg.color.outputmode);
     colorutils.setHSVmodel((RGBWW_HSVMODEL)app.cfg.color.hsv.model);
+
 
 }
 
 void APPLedCtrl::show_led() {
-	show();
+	//int curmicros = millis();
+	if(!show()){
+		//debugapp("start %i end: %i, diff %i", curmicros, millis(), millis() - curmicros);
+	}
+
 }
 
 void APPLedCtrl::start() {
-	ledTimer.initializeMs(20, TimerDelegate(&APPLedCtrl::show_led, this)).start();
+	debugapp("APPLedCtrl::start");
+	ledTimer.initializeMs(RGBWW_MINTIMEDIFF, TimerDelegate(&APPLedCtrl::show_led, this)).start();
 }
 
 void APPLedCtrl::stop() {
+	debugapp("APPLedCtrl::stop");
 	ledTimer.stop();
 }
 
-void APPLedCtrl::save_color() {
+void APPLedCtrl::color_save() {
 	debugapp("APPLedCtrl::save_color");
-	HSVK c = getCurrentColor();
+	HSVCT c = getCurrentColor();
 	color.h = c.h;
 	color.s = c.s;
 	color.v = c.v;
-	color.k = c.k;
+	color.ct = c.ct;
 	color.save();
+}
+
+void  APPLedCtrl::color_reset() {
+	debugapp("APPLedCtrl::reset_color");
+	color.h = 0;
+	color.s = 0;
+	color.v = 0;
+	color.ct = 0;
+	color.save();
+}
+
+void APPLedCtrl::test_channels() {
+	ChannelOutput red = ChannelOutput(1023, 0, 0, 0, 0);
+	ChannelOutput green = ChannelOutput(0, 1023, 0, 0, 0);
+	ChannelOutput blue = ChannelOutput(0, 0, 1023, 0, 0);
+	ChannelOutput ww = ChannelOutput(0, 0, 0, 1023, 0);
+	ChannelOutput cw = ChannelOutput(0, 0, 0, 0, 1023);
+	ChannelOutput black = ChannelOutput(0, 0, 0, 0, 0);
+
+	fadeRAW(black, red, 2000, true);
+	fadeRAW(black, 2000, true);
+	fadeRAW(green, 2000, true);
+	fadeRAW(black, 2000, true);
+	fadeRAW(blue, 2000, true);
+	fadeRAW(black, 2000, true);
+	fadeRAW(ww, 2000, true);
+	fadeRAW(black, 2000, true);
+	fadeRAW(cw, 2000, true);
+	fadeRAW(black, 2000, true);
 }
 
 void APPLedCtrl::led_callback(RGBWWLed* rgbwwctrl) {
 	debugapp("APPLedCtrl::led_callback");
-	app.rgbwwctrl.save_color();
+	app.rgbwwctrl.color_save();
 }

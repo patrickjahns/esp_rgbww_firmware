@@ -32,6 +32,7 @@ ApplicationWebserver::ApplicationWebserver() {
 	addPath("/config", HttpPathDelegate(&ApplicationWebserver::onConfig, this));
 	addPath("/info", HttpPathDelegate(&ApplicationWebserver::onInfo, this));
 	addPath("/color", HttpPathDelegate(&ApplicationWebserver::onColor, this));
+	addPath("/animation", HttpPathDelegate(&ApplicationWebserver::onAnimation, this));
 	addPath("/networks", HttpPathDelegate(&ApplicationWebserver::onNetworks, this));
 	addPath("/scan_networks", HttpPathDelegate(&ApplicationWebserver::onScanNetworks, this));
 	addPath("/system", HttpPathDelegate(&ApplicationWebserver::onSystemReq, this));
@@ -186,7 +187,11 @@ void ApplicationWebserver::onConfig(HttpRequest &request, HttpResponse &response
 		String error_msg = getApiCodeMsg(API_CODES::API_BAD_REQUEST);
 		DynamicJsonBuffer jsonBuffer;
 		JsonObject& root = jsonBuffer.parseObject(request.getBody());
-		root.prettyPrintTo(Serial);
+
+		// remove comment for debugging
+		//root.prettyPrintTo(Serial);
+
+
 		bool ip_updated = false;
 		bool color_updated = false;
 		bool ap_updated = false;
@@ -300,6 +305,8 @@ void ApplicationWebserver::onConfig(HttpRequest &request, HttpResponse &response
 					}
 				}
 			}
+			//disabled until functionality is implemented
+			/*
 			if(root["network"]["udpserver"].success()) {
 				//TODO: what to do if changed?
 				if(root["network"]["udpserver"]["enabled"].success()) {
@@ -326,6 +333,7 @@ void ApplicationWebserver::onConfig(HttpRequest &request, HttpResponse &response
 					}
 				}
 			}
+			*/
 		}
 
 		if (root["color"].success())
@@ -467,27 +475,30 @@ void ApplicationWebserver::onConfig(HttpRequest &request, HttpResponse &response
 			if (ip_updated) {
 				if (root["restart"].success()) {
 					if (root["restart"] == true) {
-						app.delayedCMD("restart", 3000);
-						//json["data"] = "restart";
 						debugapp("ApplicationWebserver::onConfig ip settings changed - rebooting");
+						app.delayedCMD("restart", 3000); // wait 3s to first send response
+						//json["data"] = "restart";
+
 					}
 				}
 			};
 			if(ap_updated) {
 				if (root["restart"].success()) {
 					if (root["restart"] == true && WifiAccessPoint.isEnabled()) {
-						app.delayedCMD("restart", 3000);
-						//json["data"] = "restart";
 						debugapp("ApplicationWebserver::onConfig wifiap settings changed - rebooting");
+						app.delayedCMD("restart", 3000); // wait 3s to first send response
+						//json["data"] = "restart";
+
 					}
 				}
 			}
 			if (color_updated) {
+				debugapp("ApplicationWebserver::onConfig color settings changed - refreshing");
 				//refresh settings
 				app.rgbwwctrl.setup();
 				//refresh current output
 				app.rgbwwctrl.refresh();
-				debugapp("ApplicationWebserver::onConfig color settings changed - refreshing");
+
 			}
 			app.cfg.save();
 			sendApiCode(response, API_CODES::API_SUCCESS);
@@ -518,13 +529,14 @@ void ApplicationWebserver::onConfig(HttpRequest &request, HttpResponse &response
 
 		//mqtt["password"] = app.cfg.network.mqtt.password.c_str();
 
-		JsonObject& udp = net.createNestedObject("udpserver");
-		udp["enabled"] = app.cfg.network.udpserver.enabled;
-		udp["port"] = app.cfg.network.udpserver.port;
+		// disabled until functionality is implemented
+		//JsonObject& udp = net.createNestedObject("udpserver");
+		//udp["enabled"] = app.cfg.network.udpserver.enabled;
+		//udp["port"] = app.cfg.network.udpserver.port;
 
-		JsonObject& tcp = net.createNestedObject("tcpserver");
-		tcp["enabled"] = app.cfg.network.tcpserver.enabled;
-		tcp["port"] = app.cfg.network.tcpserver.port;
+		//JsonObject& tcp = net.createNestedObject("tcpserver");
+		//tcp["enabled"] = app.cfg.network.tcpserver.enabled;
+		//tcp["port"] = app.cfg.network.tcpserver.port;
 
 		JsonObject& color = json.createNestedObject("color");
 		color["outputmode"] = app.cfg.color.outputmode;
@@ -569,7 +581,9 @@ void ApplicationWebserver::onInfo(HttpRequest &request, HttpResponse &response)
 	data["firmware"] = fw_version;
 	data["config_version"] = app.cfg.configversion;
 	data["sming"] = SMING_VERSION;
-	data["rgbwwled"] = RGBWW_VERSION;
+	JsonObject& rgbww = data.createNestedObject("rgbww");
+	rgbww["version"] = RGBWW_VERSION;
+	rgbww["queuesize"] = RGBWW_ANIMATIONQSIZE;
 	JsonObject& con = data.createNestedObject("connection");
 	con["connected"] = WifiStation.isConnected();
 	con["ssid"] = WifiStation.getSSID ();
@@ -606,35 +620,98 @@ void ApplicationWebserver::onColor(HttpRequest &request, HttpResponse &response)
 			JsonObject& root = jsonBuffer.parseObject(body);
 			//root.prettyPrintTo(Serial);
 
-			if (root["color"].success()) {
-				if(root["color"]["h"].success() && root["color"]["s"].success() && root["color"]["v"].success()) {
-					float h, s, v;
-					int t, k = 0;
-					bool q = false;
-					bool d = false;
-					HSVK c;
-					h = root["color"]["h"].as<float>();
-					s = root["color"]["s"].as<float>();
-					v = root["color"]["v"].as<float>();
+			if(root["kelvin"].success()) {
+				int t, k = 0;
+				bool q = false;
 
-					if(root["color"]["k"].success()) {
-						k = root["color"]["k"].as<int>();
+
+				k = root["kelvin"].as<int>();
+				if(root["t"].success()) {
+					t = root["t"].as<int>();
+				}
+				if(root["q"].success()) {
+					q = root["q"];
+				}
+				//TODO: hand to rgbctrl
+			} else  if (root["hsv"].success()) {
+				if(root["hsv"]["h"].success() && root["hsv"]["s"].success() && root["hsv"]["v"].success()) {
+					float h, s, v;
+					int t, ct = 0;
+					int d = 1;
+					bool q = false;
+					String cmd = "solid";
+					HSVCT c;
+					h = constrain(root["hsv"]["h"].as<float>(), 0.0, 360.0);
+					s = constrain(root["hsv"]["s"].as<float>(), 0.0, 100.0);
+					v = constrain(root["hsv"]["v"].as<float>(), 0.0, 100.0);
+
+					if(root["hsv"]["ct"].success()) {
+						ct = root["hsv"]["ct"].as<int>();
+						if(ct != 0 && (ct < 100 || ct > 10000 || (ct > 500 && ct < 2000))) {
+							sendApiCode(response, API_CODES::API_BAD_REQUEST, "bad param for ct");
+							return;
+						}
 					}
 					if (root["cmd"].success()) {
-						if(root["cmd"]["t"].success()) {
-							t = root["cmd"]["t"].as<int>();
-						}
-						if(root["cmd"]["q"].success()) {
-							q = root["cmd"]["q"];
-						}
-						if(root["cmd"]["d"].success()) {
-							d = root["cmd"]["d"];
-						}
+						cmd = root["cmd"].asString();
 					}
-					c = HSVK(h, s, v, k);
-					debugapp("ApplicationWebserver::onColor H %i S %i V %i K %i", c.h, c.s, c.v, c.k);
-					app.rgbwwctrl.setHSV(c, t, q);
 
+					if(root["t"].success()) {
+						t = root["t"].as<int>();
+					}
+					if(root["q"].success()) {
+						q = root["q"];
+					}
+					if(root["d"].success()) {
+						d = root["d"].as<int>();
+					}
+
+					c = HSVCT(h, s, v, ct);
+					debugapp("ApplicationWebserver::onColor HSV  H %f S %f V %f CT %i", h, s, v, ct);
+					if(cmd.equals("fade")) {
+						app.rgbwwctrl.fadeHSV(c, t, d, q);
+					} else {
+						app.rgbwwctrl.setHSV(c, t, q);
+					}
+
+				} else {
+					sendApiCode(response, API_CODES::API_MISSING_PARAM);
+					return;
+				}
+			} else if(root["raw"].success()) {
+				if(root["raw"]["r"].success() && root["raw"]["g"].success() && root["raw"]["b"].success() && \
+					root["raw"]["ww"].success() && root["raw"]["cw"].success()) {
+						int t, r, g, b, ww, cw = 0;
+						String cmd = "solid";
+						bool q = false;
+
+						//r = (int(constrain(root["raw"]["r"].as<float>(), 0.0, 255.0)*100) * RGBWW_PWMMAXVAL) / 100;
+						//g = (int(constrain(root["raw"]["g"].as<float>(), 0.0, 255.0)*100) * RGBWW_PWMMAXVAL)/ 100;
+						//b = (int(constrain(root["raw"]["b"].as<float>(), 0.0, 255.0)*100) * RGBWW_PWMMAXVAL)/ 100;
+						//cw = (int(constrain(root["raw"]["cw"].as<float>(), 0.0, 255.0)*100) * RGBWW_PWMMAXVAL)/ 100;
+						//ww = (int(constrain(root["raw"]["ww"].as<float>(), 0.0, 255.0)*100) * RGBWW_PWMMAXVAL)/ 100;
+						r = constrain(root["raw"]["r"].as<int>(), 0, 1023);
+						g = constrain(root["raw"]["g"].as<int>(), 0, 1023);
+						b = constrain(root["raw"]["b"].as<int>(), 0, 1023);
+						ww = constrain(root["raw"]["ww"].as<int>(), 0, 1023);
+						cw = constrain(root["raw"]["cw"].as<int>(), 0, 1023);
+						if (root["cmd"].success()) {
+							cmd = root["cmd"].asString();
+						}
+						if(root["t"].success()) {
+							t = root["t"].as<int>();
+						}
+						if(root["q"].success()) {
+							q = root["q"];
+						}
+
+						ChannelOutput output = ChannelOutput(r, g, b, ww, cw);
+						debugapp("ApplicationWebserver::onColor RAW  r:%i g:%i b:%i ww:%i cw:%i", r, g, b, ww, cw);
+						if(cmd.equals("fade")) {
+							app.rgbwwctrl.fadeRAW(output, t, q);
+						} else {
+							app.rgbwwctrl.setRAW(output, t, q);
+						}
 				} else {
 					sendApiCode(response, API_CODES::API_MISSING_PARAM);
 					return;
@@ -649,22 +726,71 @@ void ApplicationWebserver::onColor(HttpRequest &request, HttpResponse &response)
 	} else {
 		JsonObjectStream* stream = new JsonObjectStream();
 		JsonObject& json = stream->getRoot();
-		JsonObject& color = json.createNestedObject("color");
-		float h, s, v;
-		int k;
-		HSVK c = app.rgbwwctrl.getCurrentColor();
-		c.asRadian(h, s, v, k);
-		color["h"] = h;
-		color["s"] = s;
-		color["v"] = v;
-		color["k"] = k;
+		String mode = request.getQueryParameter("mode", "hsv");
+		if(mode.equals("raw")) {
+			JsonObject& raw = json.createNestedObject("raw");
+			ChannelOutput output = app.rgbwwctrl.getCurrentOutput();
+			raw["r"] = output.r;
+			raw["g"] = output.g;
+			raw["b"] = output.b;
+			raw["ww"] = output.ww;
+			raw["cw"] = output.cw;
+
+		} else if (mode.equals("temp")) {
+			json["kelvin"] = 0;
+			//TODO get kelvin from controller
+		} else {
+			JsonObject& hsv = json.createNestedObject("hsv");
+
+			float h, s, v;
+			int ct;
+			HSVCT c = app.rgbwwctrl.getCurrentColor();
+			c.asRadian(h, s, v, ct);
+			hsv["h"] = h;
+			hsv["s"] = s;
+			hsv["v"] = v;
+			hsv["ct"] = ct;
+		}
 		sendApiResponse(response, stream);
 	}
 
 
 }
 
+void ApplicationWebserver::onAnimation(HttpRequest &request, HttpResponse &response)
+{
+	if(!authenticated(request, response)) return;
+	if(request.getRequestMethod() != RequestMethod::POST && request.getRequestMethod() != RequestMethod::GET) {
+		sendApiCode(response, API_CODES::API_BAD_REQUEST);
+		return;
+	}
 
+
+	bool error = false;
+	if (request.getRequestMethod() == RequestMethod::POST)
+	{
+		String body = request.getBody();
+		if ( body == NULL || body.length() > 128)
+		{
+			sendApiCode(response, API_CODES::API_BAD_REQUEST);
+			return;
+
+		} else {
+
+			DynamicJsonBuffer jsonBuffer;
+			JsonObject& root = jsonBuffer.parseObject(body);
+			//root.prettyPrintTo(Serial);
+		}
+		sendApiCode(response, API_CODES::API_SUCCESS);
+	} else {
+		JsonObjectStream* stream = new JsonObjectStream();
+		JsonObject& json = stream->getRoot();
+
+		sendApiResponse(response, stream);
+	}
+
+
+}
 
 
 void ApplicationWebserver::onNetworks(HttpRequest &request, HttpResponse &response)

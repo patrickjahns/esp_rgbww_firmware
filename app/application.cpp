@@ -24,6 +24,11 @@
 
 Application app;
 
+// interrupt handler
+void IRAM_ATTR onClearButton() {
+	app.rgbwwctrl.test_channels();
+}
+
 // Sming Framework INIT method - called during boot
 void init() {
 
@@ -32,16 +37,21 @@ void init() {
 
 	Serial.begin(SERIAL_BAUD_RATE); // 115200 by default
 	Serial.systemDebugOutput(false); // don`t show system debug messages
-
+	//System.setCpuFrequencye(CF_160MHz);
 	// set CLR pin to input
 	pinMode(CLEAR_PIN, INPUT);
 
 	// seperated application init
 	app.init();
 
+	// attach interrupt
+	attachInterrupt(CLEAR_PIN, onClearButton, LOW);
+
 	// Run Services on system ready
 	System.onReady(SystemReadyDelegate(&Application::startServices, &app));
 }
+
+
 
 
 void Application::init() {
@@ -99,6 +109,7 @@ void Application::restart() {
 void Application::reset() {
 	debugapp("Application::reset");
 	cfg.reset(); // reset configuration
+	rgbwwctrl.color_reset();
 	network.forget_wifi(); // reset wifi
 	delay(1000);
 	restart();
