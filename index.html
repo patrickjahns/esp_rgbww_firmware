@@ -36,7 +36,9 @@
 <p>Link for OTA update 
 <a href="http://patrickjahns.github.io/esp_rgbww_firmware/release/version.json">http://patrickjahns.github.io/esp_rgbww_firmware/release/version.json</a></p>
 
-<p>Link to seperate files</p>
+<p><a href="http://patrickjahns.github.io/esp_rgbww_firmware/release/esp_rgbww_firmware.zip">Precompiled binaries</a></p>
+
+<p>Seperate files</p>
 
 <ul>
 <li><a href="http://patrickjahns.github.io/esp_rgbww_firmware/release/rboot.bin">Bootloader (rboot)</a></li>
@@ -46,12 +48,7 @@
 
 <p>Filesystem includes the latest version of <a href="https://github.com/patrickjahns/esp_rgbww_webinterface">web interface</a></p>
 
-<p>Use <code>esptool2</code> for flashing</p>
-
-<p>Example command:</p>
-
-<pre><code>esptool -p COM3 -b 115200 write_flash -ff 40m -fm qio -fs 32m 0x00000 rboot.bin 0x02000 rom0.bin 0x300000 spiff_rom.bin
-</code></pre>
+<p>For more information on flashing your controller, <a href="https://github.com/patrickjahns/esp_rgbww_firmware/wiki/1.1-Flashing">please refer to the wiki</a></p>
       </section>
       <footer>
         <p>This project is maintained by <a href="https://github.com/patrickjahns">patrickjahns</a></p>
