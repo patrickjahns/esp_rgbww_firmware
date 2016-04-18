@@ -261,16 +261,12 @@ OTASTATUS ApplicationOTA::getWebappStatus(){
 
 
 OTASTATUS ApplicationOTA::getStatus() {
-	if (getFirmwareStatus() == OTASTATUS::OTA_NOT_UPDATING ||
-			getWebappStatus() == OTASTATUS::OTA_NOT_UPDATING)
-	{
+	if (fwstatus == OTASTATUS::OTA_NOT_UPDATING && webappstatus == OTASTATUS::OTA_NOT_UPDATING)
 		return OTASTATUS::OTA_NOT_UPDATING;
-	}
-	if (getFirmwareStatus() == OTASTATUS::OTA_PROCESSING ||
-			getWebappStatus() == OTASTATUS::OTA_PROCESSING)
-	{
+
+	if (fwstatus == OTASTATUS::OTA_PROCESSING || webappstatus == OTASTATUS::OTA_PROCESSING)
 		return OTASTATUS::OTA_PROCESSING;
-	}
+
 	if((fwstatus != OTASTATUS::OTA_NOT_UPDATING && fwstatus == OTASTATUS::OTA_FAILED) ||
 			(webappstatus != OTASTATUS::OTA_NOT_UPDATING && webappstatus == OTASTATUS::OTA_FAILED)) {
 		return OTASTATUS::OTA_FAILED;
