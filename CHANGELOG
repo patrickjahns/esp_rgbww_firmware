@@ -1,4 +1,11 @@
 ## Changelog
+0.2.3 (17.04.2016)
+  * BUGFIX: OTA returning failed even though update was successfull
+  * include RGBWWLibrary 0.8.0
+  * allow setting color via HSV/RAW values
+  * api improvements
+  * removed TCP/UDP settings until it has been implemented
+
 0.2.2 (02.04.2016)
   * BUGFIX: OTA would not set proper rom
   * BUGFIX: save settings not working
