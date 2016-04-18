@@ -25,6 +25,7 @@
 
 static const char* fw_version = FWVERSION;
 static const char* fw_git_version = GITVERSION;
+static const char* fw_git_date = GITDATE;
 
 // main forward declarations
 class Application {

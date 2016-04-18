@@ -579,6 +579,8 @@ void ApplicationWebserver::onInfo(HttpRequest &request, HttpResponse &response)
 	JsonObject& data = stream->getRoot();
 	data["deviceid"] = String(system_get_chip_id());
 	data["firmware"] = fw_version;
+	data["git_version"] = fw_git_version;
+	data["git_date"] = fw_git_date;
 	data["config_version"] = app.cfg.configversion;
 	data["sming"] = SMING_VERSION;
 	JsonObject& rgbww = data.createNestedObject("rgbww");
