@@ -1,6 +1,7 @@
 # TODOs
 - General
   - [ ] Documentation
+  - [ ] Extend deploy.sh to allow develop releases for testing
 
  - Connection
   - [ ] MQTT 
