@@ -26,7 +26,8 @@ Application app;
 
 // interrupt handler
 void IRAM_ATTR onClearButton() {
-	app.rgbwwctrl.test_channels();
+	debugapp("onClearButton");
+	//app.rgbwwctrl.test_channels();
 }
 
 // Sming Framework INIT method - called during boot
@@ -45,7 +46,7 @@ void init() {
 	app.init();
 
 	// attach interrupt
-	attachInterrupt(CLEAR_PIN, onClearButton, LOW);
+	attachInterrupt(CLEAR_PIN, onClearButton, (GPIO_INT_TYPE)GPIO_PIN_INTR_LOLEVEL);
 
 	// Run Services on system ready
 	System.onReady(SystemReadyDelegate(&Application::startServices, &app));
@@ -59,9 +60,11 @@ void Application::init() {
 	Serial.printf("RGBWW Controller v %s\r\n", fw_version);
 	//load settings
 	Serial.println();
+
 	if(digitalRead(CLEAR_PIN) < 1) {
 		Serial.println("CLR button low - resetting settings");
 		cfg.reset();
+		network.forget_wifi();
 	}
 
 	if (cfg.exist()) {
@@ -71,6 +74,7 @@ void Application::init() {
 		_first_run = true;
 		cfg.save();
 	}
+
 
 	// cleanup OTA - fragments might be there when OTA
 	// failed unexpectedly
