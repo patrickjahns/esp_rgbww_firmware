@@ -663,6 +663,12 @@ void ApplicationWebserver::onColor(HttpRequest &request, HttpResponse &response)
 					}
 					if(root["q"].success()) {
 						q = root["q"];
+						if (q) {
+							if(app.rgbwwctrl.isAnimationQFull()) {
+								sendApiCode(response, API_CODES::API_BAD_REQUEST, "queue is full");
+								return;
+							}
+						}
 					}
 					if(root["d"].success()) {
 						d = root["d"].as<int>();
@@ -705,6 +711,12 @@ void ApplicationWebserver::onColor(HttpRequest &request, HttpResponse &response)
 						}
 						if(root["q"].success()) {
 							q = root["q"];
+							if (q) {
+								if(app.rgbwwctrl.isAnimationQFull()) {
+									sendApiCode(response, API_CODES::API_BAD_REQUEST, "queue is full");
+									return;
+								}
+							}
 						}
 
 						ChannelOutput output = ChannelOutput(r, g, b, ww, cw);
