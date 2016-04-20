@@ -133,7 +133,9 @@ bool Application::delayedCMD(String cmd, int delay) {
 	} else if (cmd.equals("forget_wifi")) {
 		network.startAp();
 		_systimer.initializeMs(delay, TimerDelegate(&AppWIFI::forget_wifi, &network)).startOnce();
-	} else {
+	} else if(cmd.equals("testchannels")){
+		rgbwwctrl.test_channels();
+    } else {
 		return false;
 	}
 	return true;

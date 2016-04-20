@@ -99,16 +99,16 @@ void APPLedCtrl::test_channels() {
 	ChannelOutput cw = ChannelOutput(0, 0, 0, 0, 1023);
 	ChannelOutput black = ChannelOutput(0, 0, 0, 0, 0);
 
-	fadeRAW(black, red, 2000, true);
-	fadeRAW(black, 2000, true);
-	fadeRAW(green, 2000, true);
-	fadeRAW(black, 2000, true);
-	fadeRAW(blue, 2000, true);
-	fadeRAW(black, 2000, true);
-	fadeRAW(ww, 2000, true);
-	fadeRAW(black, 2000, true);
-	fadeRAW(cw, 2000, true);
-	fadeRAW(black, 2000, true);
+	fadeRAW(black, red, 1000, true);
+	fadeRAW(black, 1000, true);
+	fadeRAW(green, 1000, true);
+	fadeRAW(black, 1000, true);
+	fadeRAW(blue, 1000, true);
+	fadeRAW(black, 1000, true);
+	fadeRAW(ww, 1000, true);
+	fadeRAW(black, 1000, true);
+	fadeRAW(cw, 1000, true);
+	fadeRAW(black, 1000, true);
 }
 
 void APPLedCtrl::led_callback(RGBWWLed* rgbwwctrl) {
