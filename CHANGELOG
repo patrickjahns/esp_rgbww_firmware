@@ -1,4 +1,9 @@
 ## Changelog
+0.2.6 (23.04.2016)
+  * code cleanup
+  * added test_channels systemcmde
+  * update webclient
+
 0.2.3 (17.04.2016)
   * BUGFIX: OTA returning failed even though update was successfull
   * include RGBWWLibrary 0.8.0
