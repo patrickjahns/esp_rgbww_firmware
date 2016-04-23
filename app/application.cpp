@@ -28,12 +28,12 @@ Application app;
 // Sming Framework INIT method - called during boot
 void init() {
 
-	// Mount file system, in order to work with files
-	spiffs_mount_manual(RBOOT_SPIFFS_0 + 0x40200000, SPIFF_SIZE);
-
 	Serial.begin(SERIAL_BAUD_RATE); // 115200 by default
 	Serial.systemDebugOutput(false); // don`t show system debug messages
 	//System.setCpuFrequencye(CF_160MHz);
+
+	// Mount file system, in order to work with files
+	spiffs_mount_manual(RBOOT_SPIFFS_0 + 0x40200000, SPIFF_SIZE);
 
 	// set CLR pin to input
 	pinMode(CLEAR_PIN, INPUT);
