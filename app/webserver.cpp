@@ -25,6 +25,10 @@
 
 
 ApplicationWebserver::ApplicationWebserver() {
+	_running = false;
+}
+
+void ApplicationWebserver::init() {
 	setDefaultHandler(HttpPathDelegate(&ApplicationWebserver::onFile, this));
 	enableHeaderProcessing("Authorization");
 	addPath("/", HttpPathDelegate(&ApplicationWebserver::onIndex, this));
@@ -40,10 +44,14 @@ ApplicationWebserver::ApplicationWebserver() {
 	addPath("/connect", HttpPathDelegate(&ApplicationWebserver::onConnect, this));
 	addPath("/generate_204", HttpPathDelegate(&ApplicationWebserver::generate204, this));
 	addPath("/ping", HttpPathDelegate(&ApplicationWebserver::onPing, this));
+	_init = true;
 }
 
 void ApplicationWebserver::start()
 {
+	if (_init == false) {
+		init();
+	}
 	listen(80);
 	_running = true;
 }
@@ -278,7 +286,6 @@ void ApplicationWebserver::onConfig(HttpRequest &request, HttpResponse &response
 			}
 			if(root["network"]["mqtt"].success()) {
 				//TODO: what to do if changed?
-
 				if(root["network"]["mqtt"]["enabled"].success()) {
 					if (root["network"]["mqtt"]["enabled"] != app.cfg.network.mqtt.enabled) {
 						app.cfg.network.mqtt.enabled = root["network"]["mqtt"]["enabled"];
@@ -338,7 +345,7 @@ void ApplicationWebserver::onConfig(HttpRequest &request, HttpResponse &response
 
 		if (root["color"].success())
 		{
-			//TODO DRY
+
 			if (root["color"]["hsv"].success()) {
 				if (root["color"]["hsv"]["model"].success()){
 					if (root["color"]["hsv"]["model"] != app.cfg.color.hsv.model) {
@@ -402,7 +409,7 @@ void ApplicationWebserver::onConfig(HttpRequest &request, HttpResponse &response
 				}
 			}
 			if (root["color"]["brightness"].success()) {
-				//TODO DRY
+
 				if (root["color"]["brightness"]["red"].success()) {
 					if (root["color"]["brightness"]["red"].as<int>() != app.cfg.color.brightness.red) {
 						app.cfg.color.brightness.red = root["color"]["brightness"]["red"].as<int>();
@@ -435,7 +442,7 @@ void ApplicationWebserver::onConfig(HttpRequest &request, HttpResponse &response
 				}
 			}
 			if (root["color"]["colortemp"].success()) {
-				//TODO: DRY
+
 				if (root["color"]["colortemp"]["ww"].success()) {
 					if (root["color"]["colortemp"]["cw"].as<int>() != app.cfg.color.colortemp.ww) {
 						app.cfg.color.colortemp.ww = root["color"]["colortemp"]["ww"].as<int>();
@@ -494,8 +501,10 @@ void ApplicationWebserver::onConfig(HttpRequest &request, HttpResponse &response
 			}
 			if (color_updated) {
 				debugapp("ApplicationWebserver::onConfig color settings changed - refreshing");
+
 				//refresh settings
 				app.rgbwwctrl.setup();
+
 				//refresh current output
 				app.rgbwwctrl.refresh();
 
@@ -513,9 +522,14 @@ void ApplicationWebserver::onConfig(HttpRequest &request, HttpResponse &response
 		JsonObject& net = json.createNestedObject("network");
 		JsonObject& con = net.createNestedObject("connection");
 		con["dhcp"] = WifiStation.isEnabledDHCP();
-		con["ip"] = WifiStation.getIP().toString();
-		con["netmask"] = WifiStation.getNetworkMask().toString();
-		con["gateway"] = WifiStation.getNetworkGateway().toString();
+
+		//con["ip"] = WifiStation.getIP().toString();
+		//con["netmask"] = WifiStation.getNetworkMask().toString();
+		//con["gateway"] = WifiStation.getNetworkGateway().toString();
+
+		con["ip"] = app.cfg.network.connection.ip.toString();
+		con["netmask"] = app.cfg.network.connection.netmask.toString();
+		con["gateway"] = app.cfg.network.connection.gateway.toString();
 
 		JsonObject& ap = net.createNestedObject("ap");
 		ap["secured"] = app.cfg.network.ap.secured;
@@ -594,7 +608,7 @@ void ApplicationWebserver::onInfo(HttpRequest &request, HttpResponse &response)
 	con["netmask"] = WifiStation.getNetworkMask().toString();
 	con["gateway"] = WifiStation.getNetworkGateway().toString();
 	con["mac"] = WifiStation.getMAC();
-	con["mdnshostname"] = app.cfg.network.connection.mdnshostname.c_str();
+	//con["mdnshostname"] = app.cfg.network.connection.mdnshostname.c_str();
 	sendApiResponse(response, stream);
 }
 

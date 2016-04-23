@@ -39,11 +39,13 @@ public:
 
 	void start();
 	void stop();
+	void init();
 	bool isRunning();
 
 	String getApiCodeMsg(API_CODES code);
 
 private:
+	bool _init = false;
 	bool _running = false;
 
 private:

@@ -92,14 +92,15 @@ void  APPLedCtrl::color_reset() {
 }
 
 void APPLedCtrl::test_channels() {
+	debugapp("APPLedCtrl::test_channels");
 	ChannelOutput red = ChannelOutput(1023, 0, 0, 0, 0);
 	ChannelOutput green = ChannelOutput(0, 1023, 0, 0, 0);
 	ChannelOutput blue = ChannelOutput(0, 0, 1023, 0, 0);
 	ChannelOutput ww = ChannelOutput(0, 0, 0, 1023, 0);
 	ChannelOutput cw = ChannelOutput(0, 0, 0, 0, 1023);
 	ChannelOutput black = ChannelOutput(0, 0, 0, 0, 0);
-
-	fadeRAW(black, red, 1000, true);
+	setRAW(black);
+	fadeRAW(red, 1000, true);
 	fadeRAW(black, 1000, true);
 	fadeRAW(green, 1000, true);
 	fadeRAW(black, 1000, true);

@@ -24,11 +24,6 @@
 
 Application app;
 
-// interrupt handler
-void IRAM_ATTR onClearButton() {
-	debugapp("onClearButton");
-	//app.rgbwwctrl.test_channels();
-}
 
 // Sming Framework INIT method - called during boot
 void init() {
@@ -39,14 +34,13 @@ void init() {
 	Serial.begin(SERIAL_BAUD_RATE); // 115200 by default
 	Serial.systemDebugOutput(false); // don`t show system debug messages
 	//System.setCpuFrequencye(CF_160MHz);
+
 	// set CLR pin to input
 	pinMode(CLEAR_PIN, INPUT);
 
 	// seperated application init
 	app.init();
 
-	// attach interrupt
-	attachInterrupt(CLEAR_PIN, onClearButton, (GPIO_INT_TYPE)GPIO_PIN_INTR_LOLEVEL);
 
 	// Run Services on system ready
 	System.onReady(SystemReadyDelegate(&Application::startServices, &app));
@@ -86,6 +80,9 @@ void Application::init() {
 	// initialize networking
 	network.init();
 
+	// initialize webserver
+	app.webserver.init();
+
 }
 
 bool Application::isFirstRun() {
@@ -95,12 +92,10 @@ bool Application::isFirstRun() {
 // Will be called when system initialization was completed
 void Application::startServices()
 {
+	debugapp("Application::startServices");
 	rgbwwctrl.start();
 	webserver.start();
 
-	//start TCP
-	//start UDP
-	//start mqtt client
 }
 
 
@@ -112,9 +107,10 @@ void Application::restart() {
 
 void Application::reset() {
 	debugapp("Application::reset");
-	cfg.reset(); // reset configuration
+	Serial.println("resetting controller");
+	cfg.reset();
 	rgbwwctrl.color_reset();
-	network.forget_wifi(); // reset wifi
+	network.forget_wifi();
 	delay(1000);
 	restart();
 }
