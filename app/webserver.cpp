@@ -96,6 +96,8 @@ String ApplicationWebserver::getApiCodeMsg(API_CODES code) {
 			return String("missing param");
 		case API_CODES::API_UNAUTHORIZED:
 			return String("authorization required");
+		case API_CODES::API_UPDATE_IN_PROGRESS:
+			return String("update in progress");
 		default:
 			return String("bad request");
 	}
@@ -177,6 +179,11 @@ void ApplicationWebserver::onConfig(HttpRequest &request, HttpResponse &response
 {
 
 	if(!authenticated(request, response)) return;
+
+	if(app.ota.isProccessing()) {
+		sendApiCode(response, API_CODES::API_UPDATE_IN_PROGRESS);
+		return;
+	}
 
 	if(request.getRequestMethod() != RequestMethod::POST && request.getRequestMethod() != RequestMethod::GET) {
 		sendApiCode(response, API_CODES::API_BAD_REQUEST);
@@ -585,6 +592,12 @@ void ApplicationWebserver::onConfig(HttpRequest &request, HttpResponse &response
 void ApplicationWebserver::onInfo(HttpRequest &request, HttpResponse &response)
 {
 	if(!authenticated(request, response)) return;
+
+	if(app.ota.isProccessing()) {
+		sendApiCode(response, API_CODES::API_UPDATE_IN_PROGRESS);
+		return;
+	}
+
 	if(request.getRequestMethod() != RequestMethod::GET) {
 		sendApiCode(response, API_CODES::API_BAD_REQUEST);
 		return;
@@ -615,6 +628,12 @@ void ApplicationWebserver::onInfo(HttpRequest &request, HttpResponse &response)
 void ApplicationWebserver::onColor(HttpRequest &request, HttpResponse &response)
 {
 	if(!authenticated(request, response)) return;
+
+	if(app.ota.isProccessing()) {
+		sendApiCode(response, API_CODES::API_UPDATE_IN_PROGRESS);
+		return;
+	}
+
 	if(request.getRequestMethod() != RequestMethod::POST && request.getRequestMethod() != RequestMethod::GET) {
 		sendApiCode(response, API_CODES::API_BAD_REQUEST);
 		return;
@@ -787,7 +806,13 @@ void ApplicationWebserver::onColor(HttpRequest &request, HttpResponse &response)
 
 void ApplicationWebserver::onAnimation(HttpRequest &request, HttpResponse &response)
 {
+	if(app.ota.isProccessing()) {
+		sendApiCode(response, API_CODES::API_UPDATE_IN_PROGRESS);
+		return;
+	}
+
 	if(!authenticated(request, response)) return;
+
 	if(request.getRequestMethod() != RequestMethod::POST && request.getRequestMethod() != RequestMethod::GET) {
 		sendApiCode(response, API_CODES::API_BAD_REQUEST);
 		return;
@@ -825,6 +850,12 @@ void ApplicationWebserver::onNetworks(HttpRequest &request, HttpResponse &respon
 {
 
 	if(!authenticated(request, response)) return;
+
+	if(app.ota.isProccessing()) {
+		sendApiCode(response, API_CODES::API_UPDATE_IN_PROGRESS);
+		return;
+	}
+
 	if(request.getRequestMethod() != RequestMethod::GET) {
 		sendApiCode(response, API_CODES::API_BAD_REQUEST);
 		return;
@@ -857,6 +888,12 @@ void ApplicationWebserver::onNetworks(HttpRequest &request, HttpResponse &respon
 
 
 void ApplicationWebserver::onScanNetworks(HttpRequest &request, HttpResponse &response) {
+
+	if(app.ota.isProccessing()) {
+		sendApiCode(response, API_CODES::API_UPDATE_IN_PROGRESS);
+		return;
+	}
+
 	if(request.getRequestMethod() != RequestMethod::POST) {
 		sendApiCode(response, API_CODES::API_BAD_REQUEST);
 		return;
@@ -872,6 +909,12 @@ void ApplicationWebserver::onScanNetworks(HttpRequest &request, HttpResponse &re
 void ApplicationWebserver::onConnect(HttpRequest &request, HttpResponse &response)
 {
 	if(!authenticated(request, response)) return;
+
+	if(app.ota.isProccessing()) {
+		sendApiCode(response, API_CODES::API_UPDATE_IN_PROGRESS);
+		return;
+	}
+
 	if(request.getRequestMethod() != RequestMethod::POST && request.getRequestMethod() != RequestMethod::GET) {
 		sendApiCode(response, API_CODES::API_BAD_REQUEST);
 		return;
@@ -930,6 +973,12 @@ void ApplicationWebserver::onConnect(HttpRequest &request, HttpResponse &respons
 
 void ApplicationWebserver::onSystemReq(HttpRequest &request, HttpResponse &response) {
 	if(!authenticated(request, response)) return;
+
+	if(app.ota.isProccessing()) {
+		sendApiCode(response, API_CODES::API_UPDATE_IN_PROGRESS);
+		return;
+	}
+
 	if(request.getRequestMethod() != RequestMethod::POST) {
 			sendApiCode(response, API_CODES::API_BAD_REQUEST);
 			return;
@@ -990,55 +1039,31 @@ void ApplicationWebserver::onUpdate(HttpRequest &request, HttpResponse &response
 		} else {
 			DynamicJsonBuffer jsonBuffer;
 			JsonObject& root = jsonBuffer.parseObject(request.getBody());
-			if(root["rom"].success() || root["webapp"].success()) {
+			if(root["rom"].success() && root["webapp"].success()) {
 				app.ota.reset();
-				if(root["rom"].success()) {
-					if(root["rom"]["url"].success()) {
-						app.ota.initFirmwareUpdate(root["rom"]["url"].asString());
-					} else {
-						error = true;
-					}
+				String romurl, spiffsurl;
+				if(root["rom"]["url"].success() && root["spiffs"]["url"].success()) {
+					romurl = root["rom"]["url"].asString();
+					spiffsurl = root["spiffs"]["url"].asString();
+				} else {
+					error = true;
 				}
 
-				if (root["webapp"].success()){
-					if(root["webapp"]["url"].success() && root["webapp"]["url"].is<JsonArray&>()) {
-
-						JsonArray& jsonurls = root["webapp"]["url"].asArray();
-						int i = 0;
-						int items = jsonurls.size();
-						String urls[items];
-						for(JsonArray::iterator it=jsonurls.begin(); it!=jsonurls.end(); ++it)
-						{
-							urls[i] = it->asString();
-							i += 1;
-
-						}
-						app.ota.initWebappUpdate(urls, items);
-					} else {
-						error = true;
-					}
-				}
 			} else {
 				error = true;
 			}
-
+			if(error) {
+				sendApiCode(response, API_CODES::API_MISSING_PARAM);
+				return;
+			} else {
+				app.ota.initOta(romurl, spiffsurl);
+			}
 		}
-		if (!error) {
-			app.ota.start();
-			sendApiCode(response, API_CODES::API_SUCCESS);
-			return;
-		} else {
-			sendApiCode(response, API_CODES::API_MISSING_PARAM);
-		}
-	} else {
-		JsonObjectStream* stream = new JsonObjectStream();
-		JsonObject& json = stream->getRoot();
-		json["ota_status"] = int(app.ota.getStatus());
-		json["rom_status"] = int(app.ota.getFirmwareStatus());
-		json["webapp_status"] = int(app.ota.getWebappStatus());
-		sendApiResponse(response, stream);
 	}
-
+	JsonObjectStream* stream = new JsonObjectStream();
+	JsonObject& json = stream->getRoot();
+	json["ota_status"] = int(app.ota.getStatus());
+	sendApiResponse(response, stream);
 
 }
 
@@ -1061,7 +1086,6 @@ void ApplicationWebserver::generate204(HttpRequest &request, HttpResponse &respo
 	response.setHeader("Content-Lenght", "0");
 	response.setContentType("text/plain");
 	response.setStatusCode(204, "NO CONTENT");
-
 }
 
 

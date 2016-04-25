@@ -36,14 +36,15 @@ public:
 
 	void startServices();
 	void stopServices();
+
 	void reset();
 	void restart();
-
-	void clearButton();
-
 	bool delayedCMD(String cmd, int delay);
-	bool isFirstRun();
 
+	void mountfs(int slot = -1);
+	void umountfs();
+
+	bool isFirstRun();
 
 public:
 	AppWIFI network;

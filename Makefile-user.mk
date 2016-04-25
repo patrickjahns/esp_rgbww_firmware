@@ -41,7 +41,7 @@ SPI_SIZE        ?= 4M
 SPIFF_FILES = webapp
 
 # size of filesystem
-SPIFF_SIZE      ?= 1000000 #~1MB spiffs size
+SPIFF_SIZE      ?= 524288 #~512KB spiffs size
 
 #### rBoot options ####
 # use rboot build mode
@@ -54,8 +54,5 @@ RBOOT_BIG_FLASH ?= 1
 RBOOT_TWO_ROMS  ?= 0
 
 # where does the filesystem reside
-RBOOT_SPIFFS_0  ?= 0x300000
-
-
-
- 
+RBOOT_SPIFFS_0  ?= 0x100000
+RBOOT_SPIFFS_1  ?= 0x300000 

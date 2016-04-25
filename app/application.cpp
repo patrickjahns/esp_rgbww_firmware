@@ -1,5 +1,5 @@
 /**
- * @file
+v * @file
  * @author  Patrick Jahns http://github.com/patrickjahns
  *
  * @section LICENSE
@@ -29,14 +29,8 @@ Application app;
 void init() {
 
 	Serial.begin(SERIAL_BAUD_RATE); // 115200 by default
-	Serial.systemDebugOutput(false); // don`t show system debug messages
+	Serial.systemDebugOutput(true); // don`t show system debug messages
 	//System.setCpuFrequencye(CF_160MHz);
-
-	// Mount file system, in order to work with files
-	spiffs_mount_manual(RBOOT_SPIFFS_0 + 0x40200000, SPIFF_SIZE);
-
-	// set CLR pin to input
-	pinMode(CLEAR_PIN, INPUT);
 
 	// seperated application init
 	app.init();
@@ -55,11 +49,8 @@ void Application::init() {
 	//load settings
 	Serial.println();
 
-	if(digitalRead(CLEAR_PIN) < 1) {
-		Serial.println("CLR button low - resetting settings");
-		cfg.reset();
-		network.forget_wifi();
-	}
+	// mount filesystem
+	mountfs();
 
 	if (cfg.exist()) {
 		cfg.load();
@@ -68,11 +59,6 @@ void Application::init() {
 		_first_run = true;
 		cfg.save();
 	}
-
-
-	// cleanup OTA - fragments might be there when OTA
-	// failed unexpectedly
-	ota.cleanupOTAafterReset();
 
 	// initialize led ctrl
 	rgbwwctrl.init();
@@ -136,4 +122,25 @@ bool Application::delayedCMD(String cmd, int delay) {
 		return false;
 	}
 	return true;
+}
+
+void Application::mountfs(int slot /* = -1 */) {
+	debugapp("Application::mountfs");
+	if (slot == -1) {
+		slot = rboot_get_current_rom();
+	}
+
+	if (slot == 0) {
+		debugf("trying to mount spiffs at %x, length %d", RBOOT_SPIFFS_0 + 0x40200000, SPIFF_SIZE);
+		spiffs_mount_manual(RBOOT_SPIFFS_0 + 0x40200000, SPIFF_SIZE);
+	} else {
+		debugf("trying to mount spiffs at %x, length %d", RBOOT_SPIFFS_1 + 0x40200000, SPIFF_SIZE);
+		spiffs_mount_manual(RBOOT_SPIFFS_1 + 0x40200000, SPIFF_SIZE);
+	}
+
+}
+
+void Application::umountfs() {
+	debugapp("Application::umountfs");
+	spiffs_unmount();
 }

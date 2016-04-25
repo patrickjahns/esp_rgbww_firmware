@@ -30,66 +30,25 @@ enum OTASTATUS {
 };
 
 
-typedef Delegate<void(bool result)> webappUpdateDelegate;
-
-struct webappUpdateItem {
-	String url;
-	String filename;
-};
-
-class WebappOTA: private HttpClient
-{
-public:
-	WebappOTA();
-	virtual ~WebappOTA(){};
-
-	void start();
-	void setCallback(webappUpdateDelegate callback);
-	void addItem(String filename, String url);
-	void success();
-	void failure();
-
-protected:
-	Vector<webappUpdateItem> items;
-	Timer timer;
-	int curitem;
-	webappUpdateDelegate delegate;
-
-protected:
-	void onTimer();
-	void finished(bool result);
-
-};
-
-
 class ApplicationOTA
 {
 public:
 
-	void start();
-	void reset();
-	void initFirmwareUpdate(String url);
-	void initWebappUpdate(String urls[], int count);
+	void start(String romurl, String spiffsurl);
 	OTASTATUS getStatus();
-	OTASTATUS getFirmwareStatus();
-	OTASTATUS getWebappStatus();
 
-	static void cleanupOTAafterReset();
+	bool isProccessing();
 
 protected:
 	rBootHttpUpdate* otaUpdater;
-	WebappOTA* webappUpdater;
 	uint8 rom_slot;
 	OTASTATUS fwstatus = OTASTATUS::OTA_NOT_UPDATING;
-	OTASTATUS webappstatus = OTASTATUS::OTA_NOT_UPDATING;
 
 protected:
-	void startFirmwareOTA();
-	void startWebappOTA();
-	void finished();
-
 	void rBootCallback(bool result);
-	void webappCallback(bool result);
+	void reset();
+	void beforeOTA();
+	void afterOTA();
 };
 
 
