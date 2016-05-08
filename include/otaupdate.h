@@ -21,34 +21,41 @@
  */
 #ifndef OTAUPDATE_H_
 #define OTAUPDATE_H_
+#define OTA_STATUS_FILE ".ota"
 
 enum OTASTATUS {
 	OTA_NOT_UPDATING = 0,
 	OTA_PROCESSING = 1,
-	OTA_SUCCESS = 2,
-	OTA_FAILED = 3
+	OTA_SUCCESS_REBOOT = 2,
+	OTA_SUCCESS = 3,
+	OTA_FAILED = 4
 };
 
+class Application;
 
 class ApplicationOTA
 {
 public:
 
 	void start(String romurl, String spiffsurl);
-	OTASTATUS getStatus();
-
-	bool isProccessing();
+	void checkAtBoot();
+	inline OTASTATUS getStatus() { return status; };
+	inline bool isProccessing() { return status == OTASTATUS::OTA_PROCESSING;};
 
 protected:
 	rBootHttpUpdate* otaUpdater;
 	uint8 rom_slot;
-	OTASTATUS fwstatus = OTASTATUS::OTA_NOT_UPDATING;
+	OTASTATUS status = OTASTATUS::OTA_NOT_UPDATING;
 
 protected:
 	void rBootCallback(bool result);
 	void reset();
 	void beforeOTA();
 	void afterOTA();
+	void saveStatus(OTASTATUS status);
+	OTASTATUS loadStatus();
+
+	friend Application;
 };
 
 

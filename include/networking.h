@@ -41,15 +41,15 @@ public:
 
 	void connect(String ssid, String pass, bool new_con = false);
 	void connect(String ssid, bool new_con = false);
-	CONNECTION_STATUS get_con_status();
-	String get_con_err_msg();
+	inline CONNECTION_STATUS get_con_status() { return _client_status; };
+	inline String get_con_err_msg() { return _client_err_msg; };
 
 	void startAp();
 	void stopAp();
 	void stopAp(int delay);
 
 	void scan();
-	bool isScanning();
+	inline bool isScanning() { return _scanning; };
 	BssList getAvailableNetworks();
 
 	void forget_wifi();
@@ -70,9 +70,9 @@ private:
 	CONNECTION_STATUS _client_status;
 
 private:
-	void _STADisconnect(String ssid, uint8_t ssid_len, uint8_t bssid[6], uint8_t reason); // Runs when Station disconnects
+	void _STADisconnect(String ssid, uint8_t ssid_len, uint8_t bssid[6], uint8_t reason);
 	void _STAConnected(String ssid, uint8_t ssid_len, uint8_t bssid[6], uint8_t reason);
-	void _STAGotIP(IPAddress ip, IPAddress mask, IPAddress gateway); // Runs when Station got ip from access-point
+	void _STAGotIP(IPAddress ip, IPAddress mask, IPAddress gateway);
 	void scanCompleted(bool succeeded, BssList list);
 };
 

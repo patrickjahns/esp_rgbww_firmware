@@ -125,36 +125,38 @@ struct ApplicationSettings
 			fileGetContent(APP_SETTINGS_FILE, jsonString, size + 1);
 			JsonObject& root = jsonBuffer.parseObject(jsonString);
 			//TODO: rewrite to cleanup unneeded tree structures
-			//connection
+
+			// connection
 			network.connection.mdnshostname = root["network"]["connection"]["hostname"].asString();
 			network.connection.dhcp = root["network"]["connection"]["dhcp"];
 			network.connection.ip = root["network"]["connection"]["ip"].asString();
 			network.connection.netmask = root["network"]["connection"]["netmask"].asString();
 			network.connection.gateway = root["network"]["connection"]["gateway"].asString();
 
-			//accesspoint
+			// accesspoint
 			network.ap.secured = root["network"]["ap"]["secured"];
 			network.ap.ssid = root["network"]["ap"]["ssid"].asString();
 			network.ap.password  = root["network"]["ap"]["password"].asString();
 
-			//tcp
+			// tcp
 			network.tcpserver.enabled  = root["network"]["tcpserver"]["enabled"];
 			network.tcpserver.port = root["network"]["tcpserver"]["port"];
-			//udp
+
+			// udp
 			network.udpserver.enabled  = root["network"]["udpserver"]["enabled"];
 			network.udpserver.port = root["network"]["udpserver"]["port"];
 
-			//mqtt
+			// mqtt
 			network.mqtt.enabled = root["network"]["mqtt"]["enabled"];
 			network.mqtt.server = root["network"]["mqtt"]["server"].asString();
 			network.mqtt.port = root["network"]["mqtt"]["port"];
 			network.mqtt.username  = root["network"]["mqtt"]["username"].asString();
 			network.mqtt.password  = root["network"]["mqtt"]["password"].asString();
 
-			//color
+			// color
 			color.outputmode = root["color"]["outputmode"];
 
-			//hsv
+			// hsv
 			color.hsv.model = root["color"]["hsv"]["model"];
 			color.hsv.red = root["color"]["hsv"]["red"];
 			color.hsv.yellow = root["color"]["hsv"]["yellow"];
@@ -163,14 +165,14 @@ struct ApplicationSettings
 			color.hsv.blue = root["color"]["hsv"]["blue"];
 			color.hsv.magenta = root["color"]["hsv"]["magenta"];
 
-			//brightness
+			// brightness
 			color.brightness.red = root["color"]["brightness"]["red"];
 			color.brightness.green = root["color"]["brightness"]["green"];
 			color.brightness.blue = root["color"]["brightness"]["blue"];
 			color.brightness.ww = root["color"]["brightness"]["ww"];
 			color.brightness.cw = root["color"]["brightness"]["cw"];
 
-			//general
+			// general
 			general.api_password = root["general"]["api_password"].asString();
 			general.api_secured = root["general"]["api_secured"];
 

@@ -32,7 +32,6 @@ class Application {
 
 public:
 	void init();
-	void loop();
 
 	void startServices();
 	void stopServices();
@@ -41,10 +40,17 @@ public:
 	void restart();
 	bool delayedCMD(String cmd, int delay);
 
-	void mountfs(int slot = -1);
+
+	void mountfs(int slot);
 	void umountfs();
 
-	bool isFirstRun();
+	inline bool isFilesystemMounted() { return _fs_mounted; };
+	inline bool isFirstRun() { return _first_run; };
+	inline bool isTempBoot() { return _bootmode == MODE_TEMP_ROM; };
+	inline int getRomSlot() { return _romslot; };
+	inline int getBootMode() {return _bootmode; };
+	void switchRom();
+
 
 public:
 	AppWIFI network;
@@ -53,10 +59,18 @@ public:
 	ApplicationOTA ota;
 	ApplicationSettings cfg;
 
+private:
+	void loadbootinfo();
 
 private:
+
 	Timer _systimer;
+	int _bootmode = 0;
+	int _romslot = 0;
 	bool _first_run = false;
+	bool _fs_mounted = false;
+	bool _run_after_ota = false;
+
 };
 // forward declaration for global vars
 extern Application app;

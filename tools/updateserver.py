@@ -27,26 +27,23 @@ def home():
 @corsDecorator
 def versioninfo():
 	rom = 0
-	webapp = 0
+	spiffs = 0
 	if path.isfile(path.join(FILEDIR, "rom0.bin")):
 		rom = {}
-		rom["version"] = "unknown"
+		rom["fw_version"] = "unknown"
 		rom["url"] = "http://"+request.host+"/rom0.bin"
 		
-	if path.isfile(path.join(FILEDIR, "index.html.gz")) and path.isfile(path.join(FILEDIR, "init.html.gz")) and \
-			path.isfile(path.join(FILEDIR, "app.min.js.gz")) and path.isfile(path.join(FILEDIR, "app.min.css.gz")):
-		webapp = {}
-		webapp["version"] = "unknown"
-		webapp["url"] = ["http://"+request.host+"/index.html.gz",
-		"http://"+request.host+"/init.html.gz",
-		"http://"+request.host+"/app.min.css.gz",
-		"http://"+request.host+"/app.min.js.gz"]
-	if rom is not 0 and webapp is not 0:
-		resp = { "rom": rom, "webapp": webapp}
+	if path.isfile(path.join(FILEDIR, "spiff_rom.bin")) :
+		spiffs = {}
+		spiffs["webapp_version"] = "unknown"
+		spiffs["url"] = "http://"+request.host+"/spiff_rom.bin"
+
+	if rom is not 0 and spiffs is not 0:
+		resp = { "rom": rom, "spiffs": spiffs}
 	elif rom is not 0:
 		resp = {"rom" : rom }
-	elif webapp is not 0:
-		resp = { "webapp" : webapp }
+	elif spiffs is not 0:
+		resp = { "spiffs" : spiffs }
 	else:
 		resp = {}
 	return json.dumps(resp)

@@ -1,5 +1,5 @@
 /**
-v * @file
+ * @file
  * @author  Patrick Jahns http://github.com/patrickjahns
  *
  * @section LICENSE
@@ -35,7 +35,6 @@ void init() {
 	// seperated application init
 	app.init();
 
-
 	// Run Services on system ready
 	System.onReady(SystemReadyDelegate(&Application::startServices, &app));
 }
@@ -49,13 +48,34 @@ void Application::init() {
 	//load settings
 	Serial.println();
 
-	// mount filesystem
-	mountfs();
+	// load boot information
+	uint8 bootmode, bootslot;
+	if(rboot_get_last_boot_mode(&bootmode)) {
+		if(bootmode == MODE_TEMP_ROM) {
+			debugapp("Application::init - booting after OTA");
+		}
+		else
+		{
+			debugapp("Application::init - normal boot");
+		}
+		_bootmode = bootmode;
+	}
 
+	if(rboot_get_last_boot_rom(&bootslot)) {
+		_romslot = bootslot;
+	}
+
+	// mount filesystem
+	mountfs(getRomSlot());
+
+	// check ota
+	ota.checkAtBoot();
+
+	// load config
 	if (cfg.exist()) {
 		cfg.load();
 	} else {
-		debugapp("Application::init - it is first run");
+		debugapp("Application::init - first run");
 		_first_run = true;
 		cfg.save();
 	}
@@ -69,10 +89,6 @@ void Application::init() {
 	// initialize webserver
 	app.webserver.init();
 
-}
-
-bool Application::isFirstRun() {
-	return _first_run;
 }
 
 // Will be called when system initialization was completed
@@ -97,7 +113,7 @@ void Application::reset() {
 	cfg.reset();
 	rgbwwctrl.color_reset();
 	network.forget_wifi();
-	delay(1000);
+	delay(100);
 	restart();
 }
 
@@ -109,38 +125,45 @@ bool Application::delayedCMD(String cmd, int delay) {
 		_systimer.initializeMs(delay, TimerDelegate(&Application::restart, this)).startOnce();
 	} else if(cmd.equals("stopap")) {
 		network.stopAp(2000);
-	} else if(cmd.equals("stopapandrestart")) {
+	} else if(cmd.equals("stopap_restart")) {
 		network.stopAp(delay);
 		_systimer.initializeMs(delay+4000, TimerDelegate(&Application::restart, this)).startOnce();
 	} else if (cmd.equals("forget_wifi")) {
 		network.startAp();
 		network.scan();
 		_systimer.initializeMs(delay, TimerDelegate(&AppWIFI::forget_wifi, &network)).startOnce();
-	} else if(cmd.equals("testchannels")){
+	} else if(cmd.equals("test_channels")){
 		rgbwwctrl.test_channels();
+    }else if(cmd.equals("switch_rom")){
+		switchRom();
+		_systimer.initializeMs(delay, TimerDelegate(&Application::restart, this)).startOnce();
     } else {
 		return false;
 	}
 	return true;
 }
 
-void Application::mountfs(int slot /* = -1 */) {
-	debugapp("Application::mountfs");
-	if (slot == -1) {
-		slot = rboot_get_current_rom();
-	}
-
+void Application::mountfs(int slot) {
+	debugapp("Application::mountfs rom slot: %i", slot);
 	if (slot == 0) {
-		debugf("trying to mount spiffs at %x, length %d", RBOOT_SPIFFS_0 + 0x40200000, SPIFF_SIZE);
+		debugapp("Application::mountfs trying to mount spiffs at %x, length %d", RBOOT_SPIFFS_0 + 0x40200000, SPIFF_SIZE);
 		spiffs_mount_manual(RBOOT_SPIFFS_0 + 0x40200000, SPIFF_SIZE);
 	} else {
-		debugf("trying to mount spiffs at %x, length %d", RBOOT_SPIFFS_1 + 0x40200000, SPIFF_SIZE);
+		debugapp("Application::mountfs trying to mount spiffs at %x, length %d", RBOOT_SPIFFS_1 + 0x40200000, SPIFF_SIZE);
 		spiffs_mount_manual(RBOOT_SPIFFS_1 + 0x40200000, SPIFF_SIZE);
 	}
-
+	_fs_mounted = true;
 }
 
 void Application::umountfs() {
 	debugapp("Application::umountfs");
 	spiffs_unmount();
+	_fs_mounted = false;
+}
+
+void Application::switchRom() {
+	debugapp("Application::switchRom");
+	int slot = getRomSlot();
+	if (slot == 0) slot = 1; else slot = 0;
+	rboot_set_current_rom(slot);
 }

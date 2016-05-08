@@ -61,11 +61,6 @@ void ApplicationWebserver::stop() {
 	_running = false;
 }
 
-bool ApplicationWebserver::isRunning() {
-	return _running;
-}
-
-
 bool ICACHE_FLASH_ATTR ApplicationWebserver::authenticated(HttpRequest &request, HttpResponse &response){
 	if (!app.cfg.general.api_secured) return true;
     String userPass=request.getHeader("Authorization");
@@ -129,6 +124,22 @@ void ApplicationWebserver::sendApiCode(HttpResponse &response, API_CODES code, S
 
 void ApplicationWebserver::onFile(HttpRequest &request, HttpResponse &response)
 {
+	if(!authenticated(request, response)) return;
+
+	if(app.ota.isProccessing()) {
+		response.setContentType("text/plain");
+		response.setStatusCode(503, "SERVICE UNAVAILABLE");
+		response.sendString("OTA in progress");
+		return;
+	}
+
+	if(!app.isFilesystemMounted()) {
+		response.setContentType("text/plain");
+		response.setStatusCode(500, "INTERNAL SERVER ERROR");
+		response.sendString("No filesystem mounted");
+		return;
+	}
+
 	String file = request.getPath();
 	if (file[0] == '/')	file = file.substring(1);
 	if (file[0] == '.') {
@@ -149,6 +160,12 @@ void ApplicationWebserver::onFile(HttpRequest &request, HttpResponse &response)
 
 void ApplicationWebserver::onIndex(HttpRequest &request, HttpResponse &response)
 {
+	if(app.ota.isProccessing()) {
+		response.setContentType("text/plain");
+		response.setStatusCode(503, "SERVICE UNAVAILABLE");
+		response.sendString("OTA in progress");
+		return;
+	}
 	if(WifiAccessPoint.isEnabled()) {
 		response.redirect("http://"+WifiAccessPoint.getIP().toString()+"/webapp");
 	} else {
@@ -160,9 +177,23 @@ void ApplicationWebserver::onIndex(HttpRequest &request, HttpResponse &response)
 void ApplicationWebserver::onWebapp(HttpRequest &request, HttpResponse &response)
 {
 	if(!authenticated(request, response)) return;
-	//don`t allow other requests than get
+
+	if(app.ota.isProccessing()) {
+		response.setContentType("text/plain");
+		response.setStatusCode(503, "SERVICE UNAVAILABLE");
+		response.sendString("OTA in progress");
+		return;
+	}
+
 	if(request.getRequestMethod() != RequestMethod::GET) {
 		response.badRequest();
+		return;
+	}
+
+	if(!app.isFilesystemMounted()) {
+		response.setContentType("text/plain");
+		response.setStatusCode(500, "INTERNAL SERVER ERROR");
+		response.sendString("No filesystem mounted");
 		return;
 	}
 	if (!WifiStation.isConnected() ) {
@@ -602,9 +633,11 @@ void ApplicationWebserver::onInfo(HttpRequest &request, HttpResponse &response)
 		sendApiCode(response, API_CODES::API_BAD_REQUEST);
 		return;
 	}
+
 	JsonObjectStream* stream = new JsonObjectStream();
 	JsonObject& data = stream->getRoot();
 	data["deviceid"] = String(system_get_chip_id());
+	data["current_rom"] = String(app.getRomSlot());
 	data["firmware"] = fw_version;
 	data["git_version"] = fw_git_version;
 	data["git_date"] = fw_git_date;
@@ -1008,7 +1041,7 @@ void ApplicationWebserver::onSystemReq(HttpRequest &request, HttpResponse &respo
 				} else {
 					error = true;
 				}
-			} else if(!app.delayedCMD(cmd, 3000)) {
+			} else if(!app.delayedCMD(cmd, 1500)) {
 				error = true;
 			}
 
@@ -1028,7 +1061,6 @@ void ApplicationWebserver::onSystemReq(HttpRequest &request, HttpResponse &respo
 void ApplicationWebserver::onUpdate(HttpRequest &request, HttpResponse &response) {
 	if(!authenticated(request, response)) return;
 
-
 	bool error = false;
 	if (request.getRequestMethod() == RequestMethod::POST)
 	{
@@ -1039,9 +1071,9 @@ void ApplicationWebserver::onUpdate(HttpRequest &request, HttpResponse &response
 		} else {
 			DynamicJsonBuffer jsonBuffer;
 			JsonObject& root = jsonBuffer.parseObject(request.getBody());
-			if(root["rom"].success() && root["webapp"].success()) {
-				app.ota.reset();
-				String romurl, spiffsurl;
+			String romurl, spiffsurl;
+			if(root["rom"].success() && root["spiffs"].success()) {
+
 				if(root["rom"]["url"].success() && root["spiffs"]["url"].success()) {
 					romurl = root["rom"]["url"].asString();
 					spiffsurl = root["spiffs"]["url"].asString();
@@ -1056,20 +1088,20 @@ void ApplicationWebserver::onUpdate(HttpRequest &request, HttpResponse &response
 				sendApiCode(response, API_CODES::API_MISSING_PARAM);
 				return;
 			} else {
-				app.ota.initOta(romurl, spiffsurl);
+				app.ota.start(romurl, spiffsurl);
 			}
 		}
 	}
 	JsonObjectStream* stream = new JsonObjectStream();
 	JsonObject& json = stream->getRoot();
-	json["ota_status"] = int(app.ota.getStatus());
+	json["status"] = int(app.ota.getStatus());
 	sendApiResponse(response, stream);
 
 }
 
 //simple call-response to check if we can reach server
 void ApplicationWebserver::onPing(HttpRequest &request, HttpResponse &response) {
-	if(request.getRequestMethod() != RequestMethod::POST) {
+	if(request.getRequestMethod() != RequestMethod::GET) {
 		sendApiCode(response, API_CODES::API_BAD_REQUEST);
 		return;
 	}

@@ -41,7 +41,7 @@ public:
 	void start();
 	void stop();
 	void init();
-	bool isRunning();
+	inline bool isRunning() { return _running; };
 
 	String getApiCodeMsg(API_CODES code);
 
