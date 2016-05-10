@@ -47,6 +47,7 @@ public:
 	void startAp();
 	void stopAp();
 	void stopAp(int delay);
+	inline bool isApActive() { return WifiAccessPoint.isEnabled(); };
 
 	void scan();
 	inline bool isScanning() { return _scanning; };

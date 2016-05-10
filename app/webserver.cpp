@@ -350,35 +350,6 @@ void ApplicationWebserver::onConfig(HttpRequest &request, HttpResponse &response
 					}
 				}
 			}
-			//disabled until functionality is implemented
-			/*
-			if(root["network"]["udpserver"].success()) {
-				//TODO: what to do if changed?
-				if(root["network"]["udpserver"]["enabled"].success()) {
-					if (root["network"]["udpserver"]["enabled"] != app.cfg.network.udpserver.enabled) {
-						app.cfg.network.udpserver.enabled = root["network"]["udpserver"]["enabled"];
-					}
-				}
-				if (root["network"]["udpserver"]["port"].success()) {
-					if (root["network"]["udpserver"]["port"] != app.cfg.network.udpserver.port) {
-						app.cfg.network.udpserver.port = root["network"]["udpserver"]["port"];
-					}
-				}
-			}
-			if(root["network"]["tcpserver"].success()) {
-				//TODO: what to do if changed?
-				if(root["network"]["tcpserver"]["enabled"].success()) {
-					if (root["network"]["tcpserver"]["enabled"] != app.cfg.network.tcpserver.enabled) {
-						app.cfg.network.tcpserver.enabled = root["network"]["tcpserver"]["enabled"];
-					}
-				}
-				if (root["network"]["tcpserver"]["port"].success()) {
-					if (root["network"]["tcpserver"]["port"] != app.cfg.network.tcpserver.port) {
-						app.cfg.network.tcpserver.port = root["network"]["tcpserver"]["port"];
-					}
-				}
-			}
-			*/
 		}
 
 		if (root["color"].success())
@@ -514,6 +485,12 @@ void ApplicationWebserver::onConfig(HttpRequest &request, HttpResponse &response
 			}
 		}
 
+		if(root["ota"].success()) {
+			if(root["ota"]["url"].success()) {
+				app.cfg.general.otaurl = root["ota"]["url"].asString();
+			}
+
+		}
 
 		// update and save settings if we haven`t received any error until now
 		if (!error) {
@@ -581,15 +558,6 @@ void ApplicationWebserver::onConfig(HttpRequest &request, HttpResponse &response
 
 		//mqtt["password"] = app.cfg.network.mqtt.password.c_str();
 
-		// disabled until functionality is implemented
-		//JsonObject& udp = net.createNestedObject("udpserver");
-		//udp["enabled"] = app.cfg.network.udpserver.enabled;
-		//udp["port"] = app.cfg.network.udpserver.port;
-
-		//JsonObject& tcp = net.createNestedObject("tcpserver");
-		//tcp["enabled"] = app.cfg.network.tcpserver.enabled;
-		//tcp["port"] = app.cfg.network.tcpserver.port;
-
 		JsonObject& color = json.createNestedObject("color");
 		color["outputmode"] = app.cfg.color.outputmode;
 
@@ -616,6 +584,9 @@ void ApplicationWebserver::onConfig(HttpRequest &request, HttpResponse &response
 
 		JsonObject& s = json.createNestedObject("security");
 		s["api_secured"] = app.cfg.general.api_secured;
+
+		JsonObject& ota = json.createNestedObject("ota");
+		ota["url"] = app.cfg.general.otaurl;
 		sendApiResponse(response, stream);
 	}
 }
@@ -1061,36 +1032,50 @@ void ApplicationWebserver::onSystemReq(HttpRequest &request, HttpResponse &respo
 void ApplicationWebserver::onUpdate(HttpRequest &request, HttpResponse &response) {
 	if(!authenticated(request, response)) return;
 
-	bool error = false;
+	if(request.getRequestMethod() != RequestMethod::POST && request.getRequestMethod() != RequestMethod::GET) {
+		sendApiCode(response, API_CODES::API_BAD_REQUEST);
+		return;
+	}
+
+
 	if (request.getRequestMethod() == RequestMethod::POST)
 	{
+		if(app.ota.isProccessing()) {
+			sendApiCode(response, API_CODES::API_UPDATE_IN_PROGRESS);
+			return;
+		}
+
 		if (request.getBody() == NULL)
 		{
 			sendApiCode(response, API_CODES::API_BAD_REQUEST);
 			return;
-		} else {
-			DynamicJsonBuffer jsonBuffer;
-			JsonObject& root = jsonBuffer.parseObject(request.getBody());
-			String romurl, spiffsurl;
-			if(root["rom"].success() && root["spiffs"].success()) {
+		}
+		DynamicJsonBuffer jsonBuffer;
+		JsonObject& root = jsonBuffer.parseObject(request.getBody());
+		String romurl, spiffsurl;
+		bool error = false;
 
-				if(root["rom"]["url"].success() && root["spiffs"]["url"].success()) {
-					romurl = root["rom"]["url"].asString();
-					spiffsurl = root["spiffs"]["url"].asString();
-				} else {
-					error = true;
-				}
+		if(root["rom"].success() && root["spiffs"].success()) {
 
+			if(root["rom"]["url"].success() && root["spiffs"]["url"].success()) {
+				romurl = root["rom"]["url"].asString();
+				spiffsurl = root["spiffs"]["url"].asString();
 			} else {
 				error = true;
 			}
-			if(error) {
-				sendApiCode(response, API_CODES::API_MISSING_PARAM);
-				return;
-			} else {
-				app.ota.start(romurl, spiffsurl);
-			}
+
+		} else {
+			error = true;
 		}
+		if(error) {
+			sendApiCode(response, API_CODES::API_MISSING_PARAM);
+			return;
+		} else {
+			app.ota.start(romurl, spiffsurl);
+			sendApiCode(response, API_CODES::API_SUCCESS);
+			return;
+		}
+
 	}
 	JsonObjectStream* stream = new JsonObjectStream();
 	JsonObject& json = stream->getRoot();

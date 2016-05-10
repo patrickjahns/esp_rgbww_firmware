@@ -27,26 +27,14 @@
 #define APP_SETTINGS_FILE ".cfg"
 #define CFG_VERSION "1"
 
-struct ApplicationSettings
-{
+struct  ApplicationSettings {
 	struct network {
-
 		struct connection {
 			String mdnshostname;
 			bool dhcp = true;
 			IPAddress ip;
 			IPAddress netmask;
 			IPAddress gateway;
-		};
-
-		struct udpserver {
-			bool 	enabled = false;
-			int	 	port = DEFAULT_UDP_PORT;
-		};
-
-		struct tcpserver {
-			bool 	enabled = false;
-			int		port = DEFAULT_TCP_PORT;
 		};
 
 		struct mqtt {
@@ -64,15 +52,10 @@ struct ApplicationSettings
 		};
 
 		connection connection;
-
-		udpserver udpserver;
-		tcpserver tcpserver;
 		mqtt mqtt;
 		ap ap;
 
 	};
-
-
 
 	struct color {
 		struct hsv {
@@ -107,6 +90,7 @@ struct ApplicationSettings
 	struct general {
 		bool	api_secured = DEFAULT_API_SECURED;
 		String	api_password = DEFAULT_API_PASSWORD;
+		String otaurl = DEFAULT_OTA_URL;
 	};
 
 	general general;
@@ -124,7 +108,6 @@ struct ApplicationSettings
 			char* jsonString = new char[size + 1];
 			fileGetContent(APP_SETTINGS_FILE, jsonString, size + 1);
 			JsonObject& root = jsonBuffer.parseObject(jsonString);
-			//TODO: rewrite to cleanup unneeded tree structures
 
 			// connection
 			network.connection.mdnshostname = root["network"]["connection"]["hostname"].asString();
@@ -137,14 +120,6 @@ struct ApplicationSettings
 			network.ap.secured = root["network"]["ap"]["secured"];
 			network.ap.ssid = root["network"]["ap"]["ssid"].asString();
 			network.ap.password  = root["network"]["ap"]["password"].asString();
-
-			// tcp
-			network.tcpserver.enabled  = root["network"]["tcpserver"]["enabled"];
-			network.tcpserver.port = root["network"]["tcpserver"]["port"];
-
-			// udp
-			network.udpserver.enabled  = root["network"]["udpserver"]["enabled"];
-			network.udpserver.port = root["network"]["udpserver"]["port"];
 
 			// mqtt
 			network.mqtt.enabled = root["network"]["mqtt"]["enabled"];
@@ -175,6 +150,7 @@ struct ApplicationSettings
 			// general
 			general.api_password = root["general"]["api_password"].asString();
 			general.api_secured = root["general"]["api_secured"];
+			general.otaurl = root["general"]["otaurl"].asString();
 
 			//TODO check if we can actually load the config
 			configversion = root["general"]["config_version"].asString();
@@ -212,14 +188,6 @@ struct ApplicationSettings
 		jmqtt["username"] = network.mqtt.username.c_str();
 		jmqtt["password"] = network.mqtt.password.c_str();
 
-		JsonObject& judp = net.createNestedObject("udpserver");
-		judp["enabled"] = network.udpserver.enabled;
-		judp["port"] = network.udpserver.port;
-
-		JsonObject& jtcp = net.createNestedObject("tcpserver");
-		jtcp["enabled"] = network.tcpserver.enabled;
-		jtcp["port"] = network.tcpserver.port;
-
 		JsonObject& c = root.createNestedObject("color");
 		c["outputmode"] = color.outputmode;
 
@@ -247,7 +215,10 @@ struct ApplicationSettings
 		root["general"] = g;
 		g["api_secured"] = general.api_secured;
 		g["api_password"] = general.api_password;
+		g["otaurl"] = general.otaurl;
 		g["config_version"] = CFG_VERSION;
+
+
 
 		String rootString;
 		if (print) {

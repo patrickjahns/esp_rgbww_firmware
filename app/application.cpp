@@ -32,6 +32,9 @@ void init() {
 	Serial.systemDebugOutput(true); // don`t show system debug messages
 	//System.setCpuFrequencye(CF_160MHz);
 
+	// set CLR pin to input
+	pinMode(CLEAR_PIN, INPUT);
+
 	// seperated application init
 	app.init();
 
@@ -68,6 +71,13 @@ void Application::init() {
 	// mount filesystem
 	mountfs(getRomSlot());
 
+	// check if we need to reset settings
+	if(digitalRead(CLEAR_PIN) < 1) {
+		Serial.println("CLR button low - resetting settings");
+		cfg.reset();
+		network.forget_wifi();
+	}
+
 	// check ota
 	ota.checkAtBoot();
 
@@ -103,6 +113,10 @@ void Application::startServices()
 
 void Application::restart() {
 	Serial.println("Restarting");
+	if(network.isApActive()) {
+		network.stopAp();
+		_systimer.initializeMs(500, TimerDelegate(&Application::restart, this)).startOnce();
+	}
 	System.restart();
 }
 
@@ -113,7 +127,7 @@ void Application::reset() {
 	cfg.reset();
 	rgbwwctrl.color_reset();
 	network.forget_wifi();
-	delay(100);
+	delay(500);
 	restart();
 }
 
@@ -125,16 +139,11 @@ bool Application::delayedCMD(String cmd, int delay) {
 		_systimer.initializeMs(delay, TimerDelegate(&Application::restart, this)).startOnce();
 	} else if(cmd.equals("stopap")) {
 		network.stopAp(2000);
-	} else if(cmd.equals("stopap_restart")) {
-		network.stopAp(delay);
-		_systimer.initializeMs(delay+4000, TimerDelegate(&Application::restart, this)).startOnce();
 	} else if (cmd.equals("forget_wifi")) {
-		network.startAp();
-		network.scan();
 		_systimer.initializeMs(delay, TimerDelegate(&AppWIFI::forget_wifi, &network)).startOnce();
 	} else if(cmd.equals("test_channels")){
 		rgbwwctrl.test_channels();
-    }else if(cmd.equals("switch_rom")){
+    } else if(cmd.equals("switch_rom")){
 		switchRom();
 		_systimer.initializeMs(delay, TimerDelegate(&Application::restart, this)).startOnce();
     } else {
