@@ -10,7 +10,7 @@
 
 - LED 
   - [ ] white/color temp -> rgbwwlib
-  - [ ] 
+
 
 # DONE
 
