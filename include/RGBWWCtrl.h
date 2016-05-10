@@ -32,10 +32,9 @@
 #define DEFAULT_AP_SSIDPREFIX "RGBWW"
 #define DEFAULT_API_SECURED false
 #define DEFAULT_API_PASSWORD "rgbwwctrl"
-#define DEFAULT_CONNECTION_RETRIES 4
+#define DEFAULT_CONNECTION_RETRIES 10
+#define DEFAULT_OTA_URL "http://patrickjahns.github.io/esp_rgbww_firmware/release/version.json"
 
-#define DEFAULT_TCP_PORT 12000
-#define DEFAULT_UDP_PORT 13000
 
 // RGBWW related
 #define DEFAULT_COLORTEMP_WW 2700

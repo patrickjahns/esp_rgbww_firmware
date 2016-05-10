@@ -34,28 +34,35 @@ COM_SPEED	= 115200
 # SPI_MODE = dio
 
 # SPI EEPROM SIZE
-SPI_SIZE        ?= 4M
+SPI_SIZE = 4M
 
 #### SPIFFS options ####
 # folder with files to include
 SPIFF_FILES = webapp
 
 # size of filesystem
-SPIFF_SIZE      ?= 1000000 #~1MB spiffs size
+#SPIFF_SIZE ?= 786432 #~768KB spiffs size
+SPIFF_SIZE      = 284288 #~512KB spiffs size
+
 
 #### rBoot options ####
 # use rboot build mode
-RBOOT_ENABLED ?= 1
+RBOOT_ENABLED = 1
+
+#  enable tmp rom switching
+RBOOT_RTC_ENABLED = 1
 
 # enable big flash support (for multiple roms, each in separate 1mb block of flash)
-RBOOT_BIG_FLASH ?= 1
+RBOOT_BIG_FLASH = 1
 
 # two rom mode (where two roms sit in the same 1mb block of flash)
-RBOOT_TWO_ROMS  ?= 0
+RBOOT_TWO_ROMS  = 0
 
 # where does the filesystem reside
-RBOOT_SPIFFS_0  ?= 0x300000
+RBOOT_SPIFFS_0  = 0x100000
+RBOOT_SPIFFS_1  = 0x300000 
 
-
-
- 
+## output file for first rom (.bin will be appended)
+#RBOOT_ROM_0     ?= rom0
+## input linker file for first rom
+#RBOOT_LD_0      ?= rom0.ld

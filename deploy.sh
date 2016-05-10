@@ -26,7 +26,10 @@ echo $WEBAPPP_VERSION
 rm -rf $TRAVIS_BUILD_DIR/webapp
 mkdir -p $TRAVIS_BUILD_DIR/webapp
 cp $TRAVIS_BUILD_DIR/esp_rgbww_webinterface/dist/* $TRAVIS_BUILD_DIR/webapp
-cp $TRAVIS_BUILD_DIR/esp_rgbww_webinterface/dist/* $TRAVIS_BUILD_DIR/release
+
+# zip webinterface
+cd $TRAVIS_BUILD_DIR/esp_rgbww_webinterface/dist/
+zip -r esp_rgbww_webinterface.zip *
 
 # rebuild rom and filesystems
 cd $TRAVIS_BUILD_DIR
@@ -39,7 +42,7 @@ cd $TRAVIS_BUILD_DIR/release
 
 # create version information
 cat <<EOF > version.json
-{"rom":{"version":"${FW_VERSION}","url":"${GH_PAGE_LINK}/rom0.bin"},"webapp":{"version":"${WEBAPP_VERSION}","url":["${GH_PAGE_LINK}/init.html.gz","${GH_PAGE_LINK}/index.html.gz","${GH_PAGE_LINK}/app.min.css.gz","${GH_PAGE_LINK}/app.min.js.gz"]}}
+{"rom":{"fw_version":"${FW_VERSION}","url":"${GH_PAGE_LINK}/rom0.bin"},"spiffs":{"webapp_version":"${WEBAPP_VERSION}","url":"${GH_PAGE_LINK}/spiff_rom.bin"}}
 EOF
 
 # create zipfile 
@@ -56,7 +59,9 @@ git reset upstream/gh-pages
 git config user.name "Patrick Jahns"
 git config user.email "<github>@<patrickjahns.de>"
 
+
 mv $TRAVIS_BUILD_DIR/release $TRAVIS_BUILD_DIR/_release/
+mv $TRAVIS_BUILD_DIR/esp_rgbww_webinterface/dist/esp_rgbww_webinterface.zip $TRAVIS_BUILD_DIR/_release/esp_rgbww_webinterface.zip
 touch .
 git add .
 git commit -m "Release Firmware v${FW_VERSION} webapp v${WEBAPP_VERSION}"

@@ -32,15 +32,11 @@ void init() {
 	Serial.systemDebugOutput(false); // don`t show system debug messages
 	//System.setCpuFrequencye(CF_160MHz);
 
-	// Mount file system, in order to work with files
-	spiffs_mount_manual(RBOOT_SPIFFS_0 + 0x40200000, SPIFF_SIZE);
-
 	// set CLR pin to input
 	pinMode(CLEAR_PIN, INPUT);
 
 	// seperated application init
 	app.init();
-
 
 	// Run Services on system ready
 	System.onReady(SystemReadyDelegate(&Application::startServices, &app));
@@ -55,24 +51,44 @@ void Application::init() {
 	//load settings
 	Serial.println();
 
+	// load boot information
+	uint8 bootmode, bootslot;
+	if(rboot_get_last_boot_mode(&bootmode)) {
+		if(bootmode == MODE_TEMP_ROM) {
+			debugapp("Application::init - booting after OTA");
+		}
+		else
+		{
+			debugapp("Application::init - normal boot");
+		}
+		_bootmode = bootmode;
+	}
+
+	if(rboot_get_last_boot_rom(&bootslot)) {
+		_romslot = bootslot;
+	}
+
+	// mount filesystem
+	mountfs(getRomSlot());
+
+	// check if we need to reset settings
 	if(digitalRead(CLEAR_PIN) < 1) {
 		Serial.println("CLR button low - resetting settings");
 		cfg.reset();
 		network.forget_wifi();
 	}
 
+	// check ota
+	ota.checkAtBoot();
+
+	// load config
 	if (cfg.exist()) {
 		cfg.load();
 	} else {
-		debugapp("Application::init - it is first run");
+		debugapp("Application::init - first run");
 		_first_run = true;
 		cfg.save();
 	}
-
-
-	// cleanup OTA - fragments might be there when OTA
-	// failed unexpectedly
-	ota.cleanupOTAafterReset();
 
 	// initialize led ctrl
 	rgbwwctrl.init();
@@ -83,10 +99,6 @@ void Application::init() {
 	// initialize webserver
 	app.webserver.init();
 
-}
-
-bool Application::isFirstRun() {
-	return _first_run;
 }
 
 // Will be called when system initialization was completed
@@ -101,6 +113,10 @@ void Application::startServices()
 
 void Application::restart() {
 	Serial.println("Restarting");
+	if(network.isApActive()) {
+		network.stopAp();
+		_systimer.initializeMs(500, TimerDelegate(&Application::restart, this)).startOnce();
+	}
 	System.restart();
 }
 
@@ -111,7 +127,7 @@ void Application::reset() {
 	cfg.reset();
 	rgbwwctrl.color_reset();
 	network.forget_wifi();
-	delay(1000);
+	delay(500);
 	restart();
 }
 
@@ -123,17 +139,40 @@ bool Application::delayedCMD(String cmd, int delay) {
 		_systimer.initializeMs(delay, TimerDelegate(&Application::restart, this)).startOnce();
 	} else if(cmd.equals("stopap")) {
 		network.stopAp(2000);
-	} else if(cmd.equals("stopapandrestart")) {
-		network.stopAp(delay);
-		_systimer.initializeMs(delay+4000, TimerDelegate(&Application::restart, this)).startOnce();
 	} else if (cmd.equals("forget_wifi")) {
-		network.startAp();
-		network.scan();
 		_systimer.initializeMs(delay, TimerDelegate(&AppWIFI::forget_wifi, &network)).startOnce();
-	} else if(cmd.equals("testchannels")){
+	} else if(cmd.equals("test_channels")){
 		rgbwwctrl.test_channels();
+    } else if(cmd.equals("switch_rom")){
+		switchRom();
+		_systimer.initializeMs(delay, TimerDelegate(&Application::restart, this)).startOnce();
     } else {
 		return false;
 	}
 	return true;
+}
+
+void Application::mountfs(int slot) {
+	debugapp("Application::mountfs rom slot: %i", slot);
+	if (slot == 0) {
+		debugapp("Application::mountfs trying to mount spiffs at %x, length %d", RBOOT_SPIFFS_0 + 0x40200000, SPIFF_SIZE);
+		spiffs_mount_manual(RBOOT_SPIFFS_0 + 0x40200000, SPIFF_SIZE);
+	} else {
+		debugapp("Application::mountfs trying to mount spiffs at %x, length %d", RBOOT_SPIFFS_1 + 0x40200000, SPIFF_SIZE);
+		spiffs_mount_manual(RBOOT_SPIFFS_1 + 0x40200000, SPIFF_SIZE);
+	}
+	_fs_mounted = true;
+}
+
+void Application::umountfs() {
+	debugapp("Application::umountfs");
+	spiffs_unmount();
+	_fs_mounted = false;
+}
+
+void Application::switchRom() {
+	debugapp("Application::switchRom");
+	int slot = getRomSlot();
+	if (slot == 0) slot = 1; else slot = 0;
+	rboot_set_current_rom(slot);
 }

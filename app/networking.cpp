@@ -42,23 +42,6 @@ void AppWIFI::scan() {
 	WifiStation.startScan(ScanCompletedDelegate(&AppWIFI::scanCompleted, this));
 }
 
-
-bool AppWIFI::isScanning() {
-	return _scanning;
-}
-
-
-CONNECTION_STATUS AppWIFI::get_con_status(){
-	return _client_status;
-};
-
-
-String AppWIFI::get_con_err_msg() {
-	return _client_err_msg;
-
-};
-
-
 void AppWIFI::scanCompleted(bool succeeded, BssList list) {
 	debugapp("AppWIFI::scanCompleted");
 	if (succeeded)

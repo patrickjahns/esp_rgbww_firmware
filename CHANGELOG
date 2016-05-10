@@ -1,7 +1,18 @@
 ## Changelog
+
+0.3.0 (10.05.2015)
+  * improved OTA method
+  * fix `/ping` endpoint
+  * fix some issues with saving api security state
+  * various small fixes
+  * removed tcp/udp stubs and settings
+  * allows for saving custom OTA Url
+Important: this release requires a fresh flash since OTA has changed
+  
+
 0.2.6 (23.04.2016)
   * code cleanup
-  * added test_channels systemcmde
+  * added test_channels systemcmd
   * update webclient
 
 0.2.3 (17.04.2016)

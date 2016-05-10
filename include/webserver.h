@@ -28,6 +28,7 @@ enum API_CODES {
 	API_BAD_REQUEST = 1,
 	API_MISSING_PARAM = 2,
 	API_UNAUTHORIZED = 3,
+	API_UPDATE_IN_PROGRESS = 4,
 };
 
 
@@ -40,7 +41,7 @@ public:
 	void start();
 	void stop();
 	void init();
-	bool isRunning();
+	inline bool isRunning() { return _running; };
 
 	String getApiCodeMsg(API_CODES code);
 

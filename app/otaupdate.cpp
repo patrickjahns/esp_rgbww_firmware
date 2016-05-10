@@ -21,302 +21,126 @@
  */
 #include <RGBWWCtrl.h>
 
+void ApplicationOTA::start(String romurl, String spiffsurl) {
+	debugapp("ApplicationOTA::start");
+	Serial.println("Starting OTA ...");
+	reset();
+	status = OTASTATUS::OTA_PROCESSING;
+	if(otaUpdater) delete otaUpdater;
+	otaUpdater = new rBootHttpUpdate();
 
-/***************************************************************
- * 			WebappOTA
- ***************************************************************/
+	rboot_config bootconf = rboot_get_config();
+	rom_slot = app.getRomSlot();
 
+	if (rom_slot == 0) rom_slot = 1; else rom_slot = 0;
 
-WebappOTA::WebappOTA() {
-	curitem = 0;
-	delegate = NULL;
-}
+	otaUpdater->addItem(bootconf.roms[rom_slot], romurl);
 
-
-void WebappOTA::setCallback(webappUpdateDelegate callback) {
-	this->delegate = callback;
-}
-
-
-void WebappOTA::addItem(String filename, String url) {
-	debugapp("WebappOTA::addItem");
-	webappUpdateItem it;
-	it.filename = filename;
-	it.url = url;
-	items.add(it);
-}
-
-
-void WebappOTA::start() {
-	//backup files
-	debugapp("WebappOTA::start");
-	for (int i = 0; i < items.count(); i++) {
-		if(fileExist(items[i].filename)) {
-			String backup = items[i].filename + ".bk";
-			if(fileExist(backup)) {
-				fileDelete(backup);
-			}
-			fileRename(items[i].filename, backup);
-			debugapp("WebappOTA::start renaming %s %s", items[i].filename.c_str(), backup.c_str());
-		}
-	}
-
-	//initialize updatetimer
-	timer.initializeMs(500, TimerDelegate(&WebappOTA::onTimer, this)).start();
-}
-
-
-void WebappOTA::finished(bool result) {
-	debugapp("WebappOTA::finished");
-	timer.stop();
-	if(delegate)
-	{
-		delegate(result);
+	if (rom_slot == 0) {
+		otaUpdater->addItem(RBOOT_SPIFFS_0, spiffsurl);
 	} else {
-		if(result) {
-			success();
-		} else {
-			failure();
-		}
+		otaUpdater->addItem(RBOOT_SPIFFS_1, spiffsurl);
+	}
+	otaUpdater->setCallback(otaUpdateDelegate(&ApplicationOTA::rBootCallback, this));
+	beforeOTA();
+	otaUpdater->start();
+}
+
+void ApplicationOTA::reset() {
+	debugapp("ApplicationOTA::reset");
+	status = OTASTATUS::OTA_NOT_UPDATING;
+	if(otaUpdater) delete otaUpdater;
+}
+
+void ApplicationOTA::beforeOTA() {
+	debugapp("ApplicationOTA::beforeOTA");
+
+	// save failed to old rom
+	saveStatus(OTASTATUS::OTA_FAILED);
+}
+
+void ApplicationOTA::afterOTA() {
+	debugapp("ApplicationOTA::afterOTA");
+	if(status == OTASTATUS::OTA_SUCCESS_REBOOT) {
+
+		// unmount old Filesystem - mount new filesystem
+		app.umountfs();
+		app.mountfs(rom_slot);
+
+		// save settings / color into new rom space
+		app.cfg.save();
+		app.rgbwwctrl.color_save();
+
+		// save success to new rom
+		saveStatus(OTASTATUS::OTA_SUCCESS);
+
+		// remount old filesystem
+		app.umountfs();
+		app.mountfs(app.getRomSlot());
+
 	}
 }
-
-
-void WebappOTA::success() {
-	debugapp("WebappOTA::success");
-	//delete backup files
-	for (int i = 0; i < items.count(); i++) {
-		String backup = items[i].filename + ".bk";
-		debugapp("WebappOTA::success removing %s", backup.c_str());
-		fileDelete(backup);
-	}
-	debugapp("WebappOTA::success WEBAPP Update successful");
-	items.clear();
-}
-
-
-void WebappOTA::failure() {
-	debugapp("WebappOTA::failure");
-	for (int i = 0; i < items.count(); i++) {
-		if(fileExist(items[i].filename)) {
-			fileDelete(items[i].filename);
-		}
-
-		String backup = items[i].filename + ".bk";
-		if(fileExist(backup)) {
-			fileRename(backup, items[i].filename);
-			debugapp("WebappOTA::failure restoring backup %s", backup.c_str());
-		} else {
-			debugapp("WebappOTA::failure ERROR - no backup %s", backup.c_str());
-		}
-	}
-	debugapp("WebappOTA::failure WEBAPP Update failed");
-	items.clear();
-}
-
-
-void WebappOTA::onTimer() {
-	debugapp("WebappOTA::onTimer");
-	if (TcpClient::isProcessing()) return;
-
-	if (TcpClient::getConnectionState() == eTCS_Successful) {
-
-		if (!isSuccessful()) {
-			//TODO more verbose error information
-			finished(false);
-			return;
-		}
-
-		curitem++;
-		if (curitem >= items.count()) {
-			debugapp("WebappOTA::onTimer Webapp downloads finished");
-			finished(true);
-			return;
-		}
-
-	} else if (TcpClient::getConnectionState() == eTCS_Failed) {
-		finished(false);
-		return;
-	}
-	webappUpdateItem  &it = items[curitem];
-	debugapp("WebappOTA::onTimer Downloading %s (%s)\r\n", it.url.c_str(), it.filename.c_str());
-	downloadFile(it.url, it.filename);
-}
-
-/***************************************************************
- * 			ApplicationOTA
- ***************************************************************/
-
-void ApplicationOTA::cleanupOTAafterReset() {
-	debugapp("ApplicationOTA::cleanupOTAafterReset");
-	//TODO: rewrite so we scan for *.bk files and restore them
-	bool cleanup = false;
-    if (fileExist("init.html.bk")) {
-    	fileDelete("init.html.gz");
-    	fileRename("init.html.bk", "init.html.gz");
-    	cleanup = true;
-    }
-    if (fileExist("index.html.bk")) {
-    	fileDelete("index.html.gz");
-    	fileRename("index.html.bk", "index.html.gz");
-    	cleanup = true;
-    }
-    if (fileExist("app.min.css.bk")) {
-    	fileDelete("app.min.css.gz");
-    	fileRename("app.min.css.bk", "app.min.css.gz");
-    	cleanup = true;
-    }
-    if (fileExist("app.min.js.bk")) {
-    	fileDelete("app.min.js.gz");
-    	fileRename("app.min.js.bk", "app.min.js.gz");
-    	cleanup = true;
-    }
-    if(cleanup) {
-    	Serial.println("restored webapplication files after failed OTA");
-    }
-}
-
 
 void ApplicationOTA::rBootCallback(bool result) {
 	debugapp("ApplicationOTA::rBootCallback");
 	if(result == true) {
-		fwstatus = OTASTATUS::OTA_SUCCESS;
-		Serial.println("Firmware update successfull");
-	} else {
-		fwstatus = OTASTATUS::OTA_FAILED;
-		Serial.println("Firmware update failed");
-	}
-	finished();
-}
 
-
-void ApplicationOTA::webappCallback(bool result) {
-	debugapp("ApplicationOTA::webappCallback");
-	if(result == true) {
-		webappstatus = OTASTATUS::OTA_SUCCESS;
-		Serial.println("Webapp update successfull");
-	} else {
-		webappstatus = OTASTATUS::OTA_FAILED;
-		Serial.println("Webapp update failed");
-	}
-	finished();
-}
-
-
-void ApplicationOTA::finished() {
-	debugapp("ApplicationOTA::finished");
-	if(fwstatus == OTASTATUS::OTA_PROCESSING || webappstatus == OTASTATUS::OTA_PROCESSING) return;
-	if((fwstatus != OTASTATUS::OTA_NOT_UPDATING && fwstatus == OTASTATUS::OTA_FAILED) ||
-			(webappstatus != OTASTATUS::OTA_NOT_UPDATING && webappstatus == OTASTATUS::OTA_FAILED)) {
-		if(webappstatus != OTASTATUS::OTA_NOT_UPDATING) {
-			webappUpdater->failure();
+		// set new temporary boot rom
+		debugapp("ApplicationOTA::rBootCallback temp boot %i", rom_slot);
+		if(rboot_set_temp_rom(rom_slot)) {
+			status = OTASTATUS::OTA_SUCCESS_REBOOT;
+			Serial.println("OTA successful");
+		} else {
+			status = OTASTATUS::OTA_FAILED;
+			Serial.println("OTA failed - could not change the rom");
 		}
-		Serial.println("OTA failed");
-
-	} else {
-		if(webappstatus != OTASTATUS::OTA_NOT_UPDATING) {
-			webappUpdater->success();
-		}
-		if(fwstatus != OTASTATUS::OTA_NOT_UPDATING) {
-			rboot_set_current_rom(rom_slot);
-		}
-		Serial.println("OTA successful");
 		// restart after 10s - gives clients enough time
 		// to fetch status and init restart themselves
-		app.delayedCMD("restart", 10000);
-	}
-
-}
-
-void ApplicationOTA::start() {
-	debugapp("ApplicationOTA::start");
-	Serial.println("Starting OTA ...");
-	if(fwstatus == OTASTATUS::OTA_PROCESSING) {
-		startFirmwareOTA();
-	}
-	if(webappstatus == OTASTATUS::OTA_PROCESSING) {
-		startWebappOTA();
-	}
-
-}
-
-
-void ApplicationOTA::reset() {
-	debugapp("ApplicationOTA::reset");
-	fwstatus = OTASTATUS::OTA_NOT_UPDATING;
-	webappstatus = OTASTATUS::OTA_NOT_UPDATING;
-	if(otaUpdater) delete otaUpdater;
-	if(webappUpdater) delete webappUpdater;
-}
-
-
-OTASTATUS ApplicationOTA::getFirmwareStatus(){
-	return fwstatus;
-}
-
-
-OTASTATUS ApplicationOTA::getWebappStatus(){
-	return webappstatus;
-}
-
-
-OTASTATUS ApplicationOTA::getStatus() {
-	if (fwstatus == OTASTATUS::OTA_NOT_UPDATING && webappstatus == OTASTATUS::OTA_NOT_UPDATING)
-		return OTASTATUS::OTA_NOT_UPDATING;
-
-	if (fwstatus == OTASTATUS::OTA_PROCESSING || webappstatus == OTASTATUS::OTA_PROCESSING)
-		return OTASTATUS::OTA_PROCESSING;
-
-	if((fwstatus != OTASTATUS::OTA_NOT_UPDATING && fwstatus == OTASTATUS::OTA_FAILED) ||
-			(webappstatus != OTASTATUS::OTA_NOT_UPDATING && webappstatus == OTASTATUS::OTA_FAILED)) {
-		return OTASTATUS::OTA_FAILED;
+		// don`t automatically restart
+		// app.delayedCMD("restart", 10000);
 	} else {
-		return OTASTATUS::OTA_SUCCESS;
+		status = OTASTATUS::OTA_FAILED;
+		Serial.println("OTA failed");
+	}
+	afterOTA();
+
+}
+
+void ApplicationOTA::checkAtBoot() {
+	debugapp("ApplicationOTA::checkAtBoot");
+	status = loadStatus();
+	if(app.isTempBoot()) {
+		debugapp("ApplicationOTA::checkAtBoot permanently enabling rom %i", app.getRomSlot());
+		rboot_set_current_rom(app.getRomSlot());
+		saveStatus(OTASTATUS::OTA_NOT_UPDATING);
 	}
 }
 
-
-void ApplicationOTA::startFirmwareOTA() {
-	debugapp("ApplicationOTA::startFirmwareOTA");
-	Serial.println("Starting Firmware update...");
-	// start update
-	otaUpdater->start();
+void ApplicationOTA::saveStatus(OTASTATUS status) {
+	debugapp("ApplicationOTA::saveStatus");
+	DynamicJsonBuffer jsonBuffer;
+	JsonObject& root = jsonBuffer.createObject();
+	root["status"] = int(status);
+	String rootString;
+	root.printTo(rootString);
+	fileSetContent(OTA_STATUS_FILE, rootString);
 }
 
-
-void ApplicationOTA::initFirmwareUpdate(String url) {
-	debugapp("ApplicationOTA::initFirmwareUpdate");
-	uint8 slot;
-	rboot_config bootconf;
-	fwstatus = OTASTATUS::OTA_PROCESSING;
-	if(otaUpdater) delete otaUpdater;
-	otaUpdater = new rBootHttpUpdate();
-
-	bootconf = rboot_get_config();
-	slot = bootconf.current_rom;
-	if (slot == 0) slot = 1; else slot = 0;
-	rom_slot = slot;
-	otaUpdater->addItem(bootconf.roms[slot], url);
-	otaUpdater->setCallback(otaUpdateDelegate(&ApplicationOTA::rBootCallback, this));
-}
-
-
-void ApplicationOTA::startWebappOTA() {
-	debugapp("ApplicationOTA::startWebappOTA");
-	Serial.println("Starting webapp update.... ");
-	// start webappupdate
-	webappUpdater->start();
-}
-
-
-void ApplicationOTA::initWebappUpdate(String urls[], int count) {
-	debugapp("ApplicationOTA::initWebappUpdate");
-	webappstatus = OTASTATUS::OTA_PROCESSING;
-	if(webappUpdater) delete webappUpdater;
-	webappUpdater = new WebappOTA();
-	for (int i = 0; i < count; i++) {
-		String fname = urls[i].substring(urls[i].lastIndexOf("/")+1, urls[i].length());
-		webappUpdater->addItem(fname, urls[i]);
+OTASTATUS ApplicationOTA::loadStatus() {
+	debugapp("ApplicationOTA::loadStatus");
+	if(fileExist(OTA_STATUS_FILE)) {
+		DynamicJsonBuffer jsonBuffer;
+		int size = fileGetSize(OTA_STATUS_FILE);
+		char* jsonString = new char[size + 1];
+		fileGetContent(OTA_STATUS_FILE, jsonString, size + 1);
+		JsonObject& root = jsonBuffer.parseObject(jsonString);
+		OTASTATUS status = (OTASTATUS)root["status"].as<int>();
+		delete[] jsonString;
+		return status;
 	}
-	webappUpdater->setCallback(webappUpdateDelegate(&ApplicationOTA::webappCallback, this));
+	else
+	{
+		return OTASTATUS::OTA_NOT_UPDATING;
+	}
 }
+
