@@ -481,7 +481,11 @@ void ApplicationWebserver::onConfig(HttpRequest &request, HttpResponse &response
 						error = true;
 						error_msg = "missing password to secure settings";
 					}
+				} else {
+					app.cfg.general.api_secured = root["security"]["api_secured"];
+					app.cfg.general.api_password = "";
 				}
+
 			}
 		}
 
