@@ -41,8 +41,8 @@ SPI_SIZE = 4M
 SPIFF_FILES = webapp
 
 # size of filesystem
-#SPIFF_SIZE ?= 786432 #~768KB spiffs size
-SPIFF_SIZE      = 284288 #~512KB spiffs size
+SPIFF_SIZE ?= 786432 #~768KB spiffs size
+#SPIFF_SIZE      = 284288 #~512KB spiffs size
 
 
 #### rBoot options ####
