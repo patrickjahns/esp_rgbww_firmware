@@ -48,6 +48,7 @@ EOF
 # create zipfile 
 zip -r esp_rgbww_firmware.zip *
 
+
 mkdir -p $TRAVIS_BUILD_DIR/_release
 cd $TRAVIS_BUILD_DIR/_release 
 
@@ -61,7 +62,7 @@ git config user.email "<github>@<patrickjahns.de>"
 
 
 mv $TRAVIS_BUILD_DIR/release $TRAVIS_BUILD_DIR/_release/
-mv $TRAVIS_BUILD_DIR/esp_rgbww_webinterface/dist/esp_rgbww_webinterface.zip $TRAVIS_BUILD_DIR/_release/esp_rgbww_webinterface.zip
+mv $TRAVIS_BUILD_DIR/esp_rgbww_webinterface/dist/esp_rgbww_webinterface.zip $TRAVIS_BUILD_DIR/_release/release/esp_rgbww_webinterface.zip
 touch .
 git add .
 git commit -m "Release Firmware v${FW_VERSION} webapp v${WEBAPP_VERSION}"
