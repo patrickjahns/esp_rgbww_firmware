@@ -999,13 +999,11 @@ void ApplicationWebserver::onSystemReq(HttpRequest &request, HttpResponse &respo
 		sendApiCode(response, API_CODES::API_BAD_REQUEST);
 		return;
 	} else {
-		StaticJsonBuffer<64> jsonBuffer;
+		DynamicJsonBuffer jsonBuffer;
 		JsonObject& root = jsonBuffer.parseObject(body);
 
 		if(root["cmd"].success()) {
-
 			String cmd = root["cmd"].asString();
-
 			if (cmd.equals("debug")) {
 				if(root["enable"].success()) {
 					if(root["enable"]) {
