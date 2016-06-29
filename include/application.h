@@ -22,7 +22,6 @@
 #ifndef APPLICATION_H_
 #define APPLICATION_H_
 
-
 static const char* fw_version = FWVERSION;
 static const char* fw_git_version = GITVERSION;
 static const char* fw_git_date = GITDATE;
@@ -40,7 +39,6 @@ public:
 	void restart();
 	bool delayedCMD(String cmd, int delay);
 
-
 	void mountfs(int slot);
 	void umountfs();
 
@@ -48,9 +46,8 @@ public:
 	inline bool isFirstRun() { return _first_run; };
 	inline bool isTempBoot() { return _bootmode == MODE_TEMP_ROM; };
 	inline int getRomSlot() { return _romslot; };
-	inline int getBootMode() {return _bootmode; };
+	inline int getBootMode() { return _bootmode; };
 	void switchRom();
-
 
 public:
 	AppWIFI network;
@@ -74,6 +71,5 @@ private:
 };
 // forward declaration for global vars
 extern Application app;
-
 
 #endif // APPLICATION_H_

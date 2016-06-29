@@ -33,14 +33,13 @@ enum OTASTATUS {
 
 class Application;
 
-class ApplicationOTA
-{
+class ApplicationOTA {
 public:
 
 	void start(String romurl, String spiffsurl);
 	void checkAtBoot();
 	inline OTASTATUS getStatus() { return status; };
-	inline bool isProccessing() { return status == OTASTATUS::OTA_PROCESSING;};
+	inline bool isProccessing() { return status == OTASTATUS::OTA_PROCESSING; };
 
 protected:
 	rBootHttpUpdate* otaUpdater;
@@ -57,9 +56,5 @@ protected:
 
 	friend Application;
 };
-
-
-
-
 
 #endif // OTAUPDATE_H_

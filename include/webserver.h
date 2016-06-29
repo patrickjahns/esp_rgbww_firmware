@@ -22,7 +22,6 @@
 #ifndef APP_WEBSERVER_H_
 #define APP_WEBSERVER_H_
 
-
 enum API_CODES {
 	API_SUCCESS = 0,
 	API_BAD_REQUEST = 1,
@@ -31,9 +30,7 @@ enum API_CODES {
 	API_UPDATE_IN_PROGRESS = 4,
 };
 
-
-class ApplicationWebserver: private HttpServer
-{
+class ApplicationWebserver: private HttpServer {
 public:
 	ApplicationWebserver();
 	virtual ~ApplicationWebserver() {};

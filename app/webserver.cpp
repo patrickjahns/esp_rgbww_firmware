@@ -22,8 +22,6 @@
 #include <RGBWWCtrl.h>
 #include <Services/WebHelpers/base64.h>
 
-
-
 ApplicationWebserver::ApplicationWebserver() {
 	_running = false;
 }
@@ -47,8 +45,7 @@ void ApplicationWebserver::init() {
 	_init = true;
 }
 
-void ApplicationWebserver::start()
-{
+void ApplicationWebserver::start() {
 	if (_init == false) {
 		init();
 	}
@@ -61,46 +58,48 @@ void ApplicationWebserver::stop() {
 	_running = false;
 }
 
-bool ICACHE_FLASH_ATTR ApplicationWebserver::authenticated(HttpRequest &request, HttpResponse &response){
-	if (!app.cfg.general.api_secured) return true;
-    String userPass=request.getHeader("Authorization");
-    int headerLength=userPass.length()-6; // header in form of: "Basic MTIzNDU2OmFiY2RlZmc="so the 6 is to get to beginning of 64 encoded string
-    if(headerLength>50){
-        return false;
-    }
+bool ICACHE_FLASH_ATTR ApplicationWebserver::authenticated(HttpRequest &request, HttpResponse &response) {
+	if (!app.cfg.general.api_secured)
+		return true;
+	String userPass = request.getHeader("Authorization");
+	// header in form of: "Basic MTIzNDU2OmFiY2RlZmc="so the 6 is to get to beginning of 64 encoded string
+	int headerLength = userPass.length() - 6;
+	if (headerLength > 50) {
+		return false;
+	}
 
-    unsigned char decbuf[headerLength]; // buffer for the decoded string
-    int outlen = base64_decode(headerLength,userPass.c_str()+6, headerLength, decbuf);
-    decbuf[outlen] = 0;
-    userPass = String((char*)decbuf);
-    if(userPass.endsWith(app.cfg.general.api_password)){
-        return true;
-    }
+	unsigned char decbuf[headerLength]; // buffer for the decoded string
+	int outlen = base64_decode(headerLength, userPass.c_str() + 6, headerLength, decbuf);
+	decbuf[outlen] = 0;
+	userPass = String((char*) decbuf);
+	if (userPass.endsWith(app.cfg.general.api_password)) {
+		return true;
+	}
 
-    response.authorizationRequired() ;
-    response.setHeader("WWW-Authenticate","Basic realm=\"RGBWW Server\"");
-    response.setHeader("401 wrong credentials", "wrong credentials");
-    response.setHeader("Connection","close");
-    return false;
+	response.authorizationRequired();
+	response.setHeader("WWW-Authenticate", "Basic realm=\"RGBWW Server\"");
+	response.setHeader("401 wrong credentials", "wrong credentials");
+	response.setHeader("Connection", "close");
+	return false;
 
 }
 
 String ApplicationWebserver::getApiCodeMsg(API_CODES code) {
-	switch(code) {
-		case API_CODES::API_MISSING_PARAM :
-			return String("missing param");
-		case API_CODES::API_UNAUTHORIZED:
-			return String("authorization required");
-		case API_CODES::API_UPDATE_IN_PROGRESS:
-			return String("update in progress");
-		default:
-			return String("bad request");
+	switch (code) {
+	case API_CODES::API_MISSING_PARAM:
+		return String("missing param");
+	case API_CODES::API_UNAUTHORIZED:
+		return String("authorization required");
+	case API_CODES::API_UPDATE_IN_PROGRESS:
+		return String("update in progress");
+	default:
+		return String("bad request");
 	}
 }
 
 void ApplicationWebserver::sendApiResponse(HttpResponse &response, JsonObjectStream* stream, int code /* = 200 */) {
 	response.setAllowCrossDomainOrigin("*");
-	if(code != 200) {
+	if (code != 200) {
 		response.badRequest();
 	}
 	response.sendJsonObject(stream);
@@ -122,18 +121,20 @@ void ApplicationWebserver::sendApiCode(HttpResponse &response, API_CODES code, S
 
 }
 
-void ApplicationWebserver::onFile(HttpRequest &request, HttpResponse &response)
-{
-	if(!authenticated(request, response)) return;
+void ApplicationWebserver::onFile(HttpRequest &request, HttpResponse &response) {
 
-	if(app.ota.isProccessing()) {
+	if (!authenticated(request, response)) {
+		return;
+	}
+
+	if (app.ota.isProccessing()) {
 		response.setContentType("text/plain");
 		response.setStatusCode(503, "SERVICE UNAVAILABLE");
 		response.sendString("OTA in progress");
 		return;
 	}
 
-	if(!app.isFilesystemMounted()) {
+	if (!app.isFilesystemMounted()) {
 		response.setContentType("text/plain");
 		response.setStatusCode(500, "INTERNAL SERVER ERROR");
 		response.sendString("No filesystem mounted");
@@ -141,16 +142,17 @@ void ApplicationWebserver::onFile(HttpRequest &request, HttpResponse &response)
 	}
 
 	String file = request.getPath();
-	if (file[0] == '/')	file = file.substring(1);
+	if (file[0] == '/')
+		file = file.substring(1);
 	if (file[0] == '.') {
 		response.forbidden();
 		return;
 	}
 
-	if (!fileExist(file) && !fileExist(file+".gz") && WifiAccessPoint.isEnabled()) {
+	if (!fileExist(file) && !fileExist(file + ".gz") && WifiAccessPoint.isEnabled()) {
 		//if accesspoint is active and we couldn`t find the file - redirect to index
 		debugapp("ApplicationWebserver::onFile redirecting");
-		response.redirect("http://"+WifiAccessPoint.getIP().toString()+"/webapp");
+		response.redirect("http://" + WifiAccessPoint.getIP().toString() + "/webapp");
 	} else {
 		response.setCache(86400, true); // It's important to use cache for better performance.
 		response.sendFile(file);
@@ -158,45 +160,54 @@ void ApplicationWebserver::onFile(HttpRequest &request, HttpResponse &response)
 
 }
 
-void ApplicationWebserver::onIndex(HttpRequest &request, HttpResponse &response)
-{
-	if(app.ota.isProccessing()) {
+void ApplicationWebserver::onIndex(HttpRequest &request, HttpResponse &response) {
+
+	if (!authenticated(request, response)) {
+		return;
+	}
+
+	if (app.ota.isProccessing()) {
 		response.setContentType("text/plain");
 		response.setStatusCode(503, "SERVICE UNAVAILABLE");
 		response.sendString("OTA in progress");
 		return;
 	}
-	if(WifiAccessPoint.isEnabled()) {
-		response.redirect("http://"+WifiAccessPoint.getIP().toString()+"/webapp");
+
+
+
+	if (WifiAccessPoint.isEnabled()) {
+		response.redirect("http://" + WifiAccessPoint.getIP().toString() + "/webapp");
 	} else {
-		response.redirect("http://"+WifiStation.getIP().toString()+"/webapp");
+		response.redirect("http://" + WifiStation.getIP().toString() + "/webapp");
 	}
 
 }
 
-void ApplicationWebserver::onWebapp(HttpRequest &request, HttpResponse &response)
-{
-	if(!authenticated(request, response)) return;
+void ApplicationWebserver::onWebapp(HttpRequest &request, HttpResponse &response) {
 
-	if(app.ota.isProccessing()) {
+	if (!authenticated(request, response)) {
+		return;
+	}
+
+	if (app.ota.isProccessing()) {
 		response.setContentType("text/plain");
 		response.setStatusCode(503, "SERVICE UNAVAILABLE");
 		response.sendString("OTA in progress");
 		return;
 	}
 
-	if(request.getRequestMethod() != RequestMethod::GET) {
+	if (request.getRequestMethod() != RequestMethod::GET) {
 		response.badRequest();
 		return;
 	}
 
-	if(!app.isFilesystemMounted()) {
+	if (!app.isFilesystemMounted()) {
 		response.setContentType("text/plain");
 		response.setStatusCode(500, "INTERNAL SERVER ERROR");
 		response.sendString("No filesystem mounted");
 		return;
 	}
-	if (!WifiStation.isConnected() ) {
+	if (!WifiStation.isConnected()) {
 		// not yet connected - serve initial settings page
 		response.sendFile("init.html");
 	} else {
@@ -205,18 +216,18 @@ void ApplicationWebserver::onWebapp(HttpRequest &request, HttpResponse &response
 	}
 }
 
+void ApplicationWebserver::onConfig(HttpRequest &request, HttpResponse &response) {
 
-void ApplicationWebserver::onConfig(HttpRequest &request, HttpResponse &response)
-{
+	if (!authenticated(request, response)) {
+		return;
+	}
 
-	if(!authenticated(request, response)) return;
-
-	if(app.ota.isProccessing()) {
+	if (app.ota.isProccessing()) {
 		sendApiCode(response, API_CODES::API_UPDATE_IN_PROGRESS);
 		return;
 	}
 
-	if(request.getRequestMethod() != RequestMethod::POST && request.getRequestMethod() != RequestMethod::GET) {
+	if (request.getRequestMethod() != RequestMethod::POST && request.getRequestMethod() != RequestMethod::GET) {
 		sendApiCode(response, API_CODES::API_BAD_REQUEST);
 		return;
 	}
@@ -237,7 +248,6 @@ void ApplicationWebserver::onConfig(HttpRequest &request, HttpResponse &response
 		// remove comment for debugging
 		//root.prettyPrintTo(Serial);
 
-
 		bool ip_updated = false;
 		bool color_updated = false;
 		bool ap_updated = false;
@@ -247,11 +257,11 @@ void ApplicationWebserver::onConfig(HttpRequest &request, HttpResponse &response
 		}
 		if (root["network"].success()) {
 
-			if(root["network"]["connection"].success()) {
+			if (root["network"]["connection"].success()) {
 
-				if(root["network"]["connection"]["dhcp"].success()) {
+				if (root["network"]["connection"]["dhcp"].success()) {
 
-					if(root["network"]["connection"]["dhcp"] != app.cfg.network.connection.dhcp) {
+					if (root["network"]["connection"]["dhcp"] != app.cfg.network.connection.dhcp) {
 						app.cfg.network.connection.dhcp = root["network"]["connection"]["dhcp"];
 						ip_updated = true;
 					}
@@ -259,9 +269,9 @@ void ApplicationWebserver::onConfig(HttpRequest &request, HttpResponse &response
 				if (!app.cfg.network.connection.dhcp) {
 					//only change if dhcp is off - otherwise ignore
 					IPAddress ip, netmask, gateway;
-					if(root["network"]["connection"]["ip"].success()) {
+					if (root["network"]["connection"]["ip"].success()) {
 						ip = root["network"]["connection"]["ip"].asString();
-						if(!(ip == app.cfg.network.connection.ip)) {
+						if (!(ip == app.cfg.network.connection.ip)) {
 							app.cfg.network.connection.ip = ip;
 							ip_updated = true;
 						}
@@ -269,9 +279,9 @@ void ApplicationWebserver::onConfig(HttpRequest &request, HttpResponse &response
 						error = true;
 						error_msg = "missing ip";
 					}
-					if(root["network"]["connection"]["netmask"].success()) {
+					if (root["network"]["connection"]["netmask"].success()) {
 						netmask = root["network"]["connection"]["netmask"].asString();
-						if(!(netmask == app.cfg.network.connection.netmask)) {
+						if (!(netmask == app.cfg.network.connection.netmask)) {
 							app.cfg.network.connection.netmask = netmask;
 							ip_updated = true;
 						}
@@ -279,9 +289,9 @@ void ApplicationWebserver::onConfig(HttpRequest &request, HttpResponse &response
 						error = true;
 						error_msg = "missing netmask";
 					}
-					if(root["network"]["connection"]["gateway"].success()) {
+					if (root["network"]["connection"]["gateway"].success()) {
 						gateway = root["network"]["connection"]["gateway"].asString();
-						if(!(gateway == app.cfg.network.connection.gateway)) {
+						if (!(gateway == app.cfg.network.connection.gateway)) {
 							app.cfg.network.connection.gateway = gateway;
 							ip_updated = true;
 						}
@@ -293,58 +303,56 @@ void ApplicationWebserver::onConfig(HttpRequest &request, HttpResponse &response
 				}
 
 			}
-			if(root["network"]["ap"].success()) {
+			if (root["network"]["ap"].success()) {
 
-
-				if(root["network"]["ap"]["ssid"].success()) {
+				if (root["network"]["ap"]["ssid"].success()) {
 					if (root["network"]["ap"]["ssid"] != app.cfg.network.ap.ssid) {
 						app.cfg.network.ap.ssid = root["network"]["ap"]["ssid"].asString();
 						ap_updated = true;
 					}
 				}
-				if(root["network"]["ap"]["secured"].success()) {
-						if (root["network"]["ap"]["secured"].as<bool>()){
-							if(root["network"]["ap"]["password"].success()) {
-								if (root["network"]["ap"]["password"] != app.cfg.network.ap.password) {
-									app.cfg.network.ap.secured = root["network"]["ap"]["secured"];
-									app.cfg.network.ap.password = root["network"]["ap"]["password"].asString();
-									ap_updated = true;
-								}
-							} else {
-								error = true;
-								error_msg = "missing password for securing ap";
+				if (root["network"]["ap"]["secured"].success()) {
+					if (root["network"]["ap"]["secured"].as<bool>()) {
+						if (root["network"]["ap"]["password"].success()) {
+							if (root["network"]["ap"]["password"] != app.cfg.network.ap.password) {
+								app.cfg.network.ap.secured = root["network"]["ap"]["secured"];
+								app.cfg.network.ap.password = root["network"]["ap"]["password"].asString();
+								ap_updated = true;
 							}
-						} else if (root["network"]["ap"]["secured"] != app.cfg.network.ap.secured)
-						{
-							root["network"]["ap"]["secured"] == app.cfg.network.ap.secured;
-							ap_updated = true;
+						} else {
+							error = true;
+							error_msg = "missing password for securing ap";
 						}
+					} else if (root["network"]["ap"]["secured"] != app.cfg.network.ap.secured) {
+						root["network"]["ap"]["secured"] = app.cfg.network.ap.secured;
+						ap_updated = true;
+					}
 				}
 
 			}
-			if(root["network"]["mqtt"].success()) {
+			if (root["network"]["mqtt"].success()) {
 				//TODO: what to do if changed?
-				if(root["network"]["mqtt"]["enabled"].success()) {
+				if (root["network"]["mqtt"]["enabled"].success()) {
 					if (root["network"]["mqtt"]["enabled"] != app.cfg.network.mqtt.enabled) {
 						app.cfg.network.mqtt.enabled = root["network"]["mqtt"]["enabled"];
 					}
 				}
-				if(root["network"]["mqtt"]["server"].success()) {
+				if (root["network"]["mqtt"]["server"].success()) {
 					if (root["network"]["mqtt"]["server"] != app.cfg.network.mqtt.server) {
 						app.cfg.network.mqtt.server = root["network"]["mqtt"]["server"].asString();
 					}
 				}
-				if(root["network"]["mqtt"]["port"].success()) {
+				if (root["network"]["mqtt"]["port"].success()) {
 					if (root["network"]["mqtt"]["port"] != app.cfg.network.mqtt.port) {
 						app.cfg.network.mqtt.port = root["network"]["mqtt"]["port"];
 					}
 				}
-				if(root["network"]["mqtt"]["username"].success()) {
+				if (root["network"]["mqtt"]["username"].success()) {
 					if (root["network"]["mqtt"]["username"] != app.cfg.network.mqtt.username) {
 						app.cfg.network.mqtt.username = root["network"]["mqtt"]["username"].asString();
 					}
 				}
-				if(root["network"]["mqtt"]["password"].success()) {
+				if (root["network"]["mqtt"]["password"].success()) {
 					if (root["network"]["mqtt"]["password"] != app.cfg.network.mqtt.password) {
 						app.cfg.network.mqtt.password = root["network"]["mqtt"]["password"].asString();
 					}
@@ -352,67 +360,54 @@ void ApplicationWebserver::onConfig(HttpRequest &request, HttpResponse &response
 			}
 		}
 
-		if (root["color"].success())
-		{
+		if (root["color"].success()) {
 
 			if (root["color"]["hsv"].success()) {
-				if (root["color"]["hsv"]["model"].success()){
+				if (root["color"]["hsv"]["model"].success()) {
 					if (root["color"]["hsv"]["model"] != app.cfg.color.hsv.model) {
 						app.cfg.color.hsv.model = root["color"]["hsv"]["model"].as<int>();
 						color_updated = true;
 					}
 				}
-				if (root["color"]["hsv"]["red"].success())
-				{
-					if (root["color"]["hsv"]["red"].as<float>() != app.cfg.color.hsv.red)
-					{
+				if (root["color"]["hsv"]["red"].success()) {
+					if (root["color"]["hsv"]["red"].as<float>() != app.cfg.color.hsv.red) {
 						app.cfg.color.hsv.red = root["color"]["hsv"]["red"].as<float>();
 						color_updated = true;
 					}
 				}
-				if (root["color"]["hsv"]["yellow"].success())
-				{
-					if (root["color"]["hsv"]["yellow"].as<float>() != app.cfg.color.hsv.yellow)
-					{
+				if (root["color"]["hsv"]["yellow"].success()) {
+					if (root["color"]["hsv"]["yellow"].as<float>() != app.cfg.color.hsv.yellow) {
 						app.cfg.color.hsv.yellow = root["color"]["hsv"]["yellow"].as<float>();
 						color_updated = true;
 					}
 				}
-				if (root["color"]["hsv"]["green"].success())
-				{
-					if (root["color"]["hsv"]["green"].as<float>() != app.cfg.color.hsv.green)
-					{
+				if (root["color"]["hsv"]["green"].success()) {
+					if (root["color"]["hsv"]["green"].as<float>() != app.cfg.color.hsv.green) {
 						app.cfg.color.hsv.green = root["color"]["hsv"]["green"].as<float>();
 						color_updated = true;
 					}
 				}
-				if (root["color"]["hsv"]["cyan"].success())
-				{
-					if (root["color"]["hsv"]["cyan"].as<float>() != app.cfg.color.hsv.cyan)
-					{
+				if (root["color"]["hsv"]["cyan"].success()) {
+					if (root["color"]["hsv"]["cyan"].as<float>() != app.cfg.color.hsv.cyan) {
 						app.cfg.color.hsv.cyan = root["color"]["hsv"]["cyan"].as<float>();
 						color_updated = true;
 					}
 				}
-				if (root["color"]["hsv"]["blue"].success())
-				{
-					if (root["color"]["hsv"]["blue"].as<float>() != app.cfg.color.hsv.blue)
-					{
+				if (root["color"]["hsv"]["blue"].success()) {
+					if (root["color"]["hsv"]["blue"].as<float>() != app.cfg.color.hsv.blue) {
 						app.cfg.color.hsv.blue = root["color"]["hsv"]["blue"].as<float>();
 						color_updated = true;
 					}
 				}
-				if (root["color"]["hsv"]["magenta"].success())
-				{
-					if (root["color"]["hsv"]["magenta"].as<float>() != app.cfg.color.hsv.magenta)
-					{
+				if (root["color"]["hsv"]["magenta"].success()) {
+					if (root["color"]["hsv"]["magenta"].as<float>() != app.cfg.color.hsv.magenta) {
 						app.cfg.color.hsv.magenta = root["color"]["hsv"]["magenta"].as<float>();
 						color_updated = true;
 					}
 				}
 			}
 			if (root["color"]["outputmode"].success()) {
-				if(root["color"]["outputmode"] != app.cfg.color.outputmode) {
+				if (root["color"]["outputmode"] != app.cfg.color.outputmode) {
 					app.cfg.color.outputmode = root["color"]["outputmode"].as<int>();
 					color_updated = true;
 				}
@@ -467,12 +462,11 @@ void ApplicationWebserver::onConfig(HttpRequest &request, HttpResponse &response
 			}
 		}
 
-		if(root["security"].success())
-		{
-			if(root["security"]["api_secured"].success()){
+		if (root["security"].success()) {
+			if (root["security"]["api_secured"].success()) {
 				if (root["security"]["api_secured"].as<bool>()) {
-					if(root["security"]["api_password"].success()){
-						if(root["security"]["api_password"] != app.cfg.general.api_password) {
+					if (root["security"]["api_password"].success()) {
+						if (root["security"]["api_password"] != app.cfg.general.api_password) {
 							app.cfg.general.api_secured = root["security"]["api_secured"];
 							app.cfg.general.api_password = root["security"]["api_password"].asString();
 						}
@@ -489,8 +483,8 @@ void ApplicationWebserver::onConfig(HttpRequest &request, HttpResponse &response
 			}
 		}
 
-		if(root["ota"].success()) {
-			if(root["ota"]["url"].success()) {
+		if (root["ota"].success()) {
+			if (root["ota"]["url"].success()) {
 				app.cfg.general.otaurl = root["ota"]["url"].asString();
 			}
 
@@ -508,7 +502,7 @@ void ApplicationWebserver::onConfig(HttpRequest &request, HttpResponse &response
 					}
 				}
 			};
-			if(ap_updated) {
+			if (ap_updated) {
 				if (root["restart"].success()) {
 					if (root["restart"] == true && WifiAccessPoint.isEnabled()) {
 						debugapp("ApplicationWebserver::onConfig wifiap settings changed - rebooting");
@@ -595,16 +589,18 @@ void ApplicationWebserver::onConfig(HttpRequest &request, HttpResponse &response
 	}
 }
 
-void ApplicationWebserver::onInfo(HttpRequest &request, HttpResponse &response)
-{
-	if(!authenticated(request, response)) return;
+void ApplicationWebserver::onInfo(HttpRequest &request, HttpResponse &response) {
 
-	if(app.ota.isProccessing()) {
+	if (!authenticated(request, response)) {
+		return;
+	}
+
+	if (app.ota.isProccessing()) {
 		sendApiCode(response, API_CODES::API_UPDATE_IN_PROGRESS);
 		return;
 	}
 
-	if(request.getRequestMethod() != RequestMethod::GET) {
+	if (request.getRequestMethod() != RequestMethod::GET) {
 		sendApiCode(response, API_CODES::API_BAD_REQUEST);
 		return;
 	}
@@ -623,7 +619,7 @@ void ApplicationWebserver::onInfo(HttpRequest &request, HttpResponse &response)
 	rgbww["queuesize"] = RGBWW_ANIMATIONQSIZE;
 	JsonObject& con = data.createNestedObject("connection");
 	con["connected"] = WifiStation.isConnected();
-	con["ssid"] = WifiStation.getSSID ();
+	con["ssid"] = WifiStation.getSSID();
 	con["dhcp"] = WifiStation.isEnabledDHCP();
 	con["ip"] = WifiStation.getIP().toString();
 	con["netmask"] = WifiStation.getNetworkMask().toString();
@@ -633,27 +629,26 @@ void ApplicationWebserver::onInfo(HttpRequest &request, HttpResponse &response)
 	sendApiResponse(response, stream);
 }
 
-void ApplicationWebserver::onColor(HttpRequest &request, HttpResponse &response)
-{
-	if(!authenticated(request, response)) return;
+void ApplicationWebserver::onColor(HttpRequest &request, HttpResponse &response) {
 
-	if(app.ota.isProccessing()) {
+	if (!authenticated(request, response)) {
+		return;
+	}
+
+	if (app.ota.isProccessing()) {
 		sendApiCode(response, API_CODES::API_UPDATE_IN_PROGRESS);
 		return;
 	}
 
-	if(request.getRequestMethod() != RequestMethod::POST && request.getRequestMethod() != RequestMethod::GET) {
+	if (request.getRequestMethod() != RequestMethod::POST && request.getRequestMethod() != RequestMethod::GET) {
 		sendApiCode(response, API_CODES::API_BAD_REQUEST);
 		return;
 	}
 
-
 	bool error = false;
-	if (request.getRequestMethod() == RequestMethod::POST)
-	{
+	if (request.getRequestMethod() == RequestMethod::POST) {
 		String body = request.getBody();
-		if ( body == NULL || body.length() > 128)
-		{
+		if (body == NULL || body.length() > 128) {
 			sendApiCode(response, API_CODES::API_BAD_REQUEST);
 			return;
 
@@ -663,21 +658,20 @@ void ApplicationWebserver::onColor(HttpRequest &request, HttpResponse &response)
 			JsonObject& root = jsonBuffer.parseObject(body);
 			//root.prettyPrintTo(Serial);
 
-			if(root["kelvin"].success()) {
+			if (root["kelvin"].success()) {
 				int t, k = 0;
 				bool q = false;
 
-
 				k = root["kelvin"].as<int>();
-				if(root["t"].success()) {
+				if (root["t"].success()) {
 					t = root["t"].as<int>();
 				}
-				if(root["q"].success()) {
+				if (root["q"].success()) {
 					q = root["q"];
 				}
 				//TODO: hand to rgbctrl
-			} else  if (root["hsv"].success()) {
-				if(root["hsv"]["h"].success() && root["hsv"]["s"].success() && root["hsv"]["v"].success()) {
+			} else if (root["hsv"].success()) {
+				if (root["hsv"]["h"].success() && root["hsv"]["s"].success() && root["hsv"]["v"].success()) {
 					float h, s, v;
 					int t, ct = 0;
 					int d = 1;
@@ -688,9 +682,9 @@ void ApplicationWebserver::onColor(HttpRequest &request, HttpResponse &response)
 					s = constrain(root["hsv"]["s"].as<float>(), 0.0, 100.0);
 					v = constrain(root["hsv"]["v"].as<float>(), 0.0, 100.0);
 
-					if(root["hsv"]["ct"].success()) {
+					if (root["hsv"]["ct"].success()) {
 						ct = root["hsv"]["ct"].as<int>();
-						if(ct != 0 && (ct < 100 || ct > 10000 || (ct > 500 && ct < 2000))) {
+						if (ct != 0 && (ct < 100 || ct > 10000 || (ct > 500 && ct < 2000))) {
 							sendApiCode(response, API_CODES::API_BAD_REQUEST, "bad param for ct");
 							return;
 						}
@@ -699,25 +693,27 @@ void ApplicationWebserver::onColor(HttpRequest &request, HttpResponse &response)
 						cmd = root["cmd"].asString();
 					}
 
-					if(root["t"].success()) {
+					if (root["t"].success()) {
 						t = root["t"].as<int>();
 					}
-					if(root["q"].success()) {
+					if (root["q"].success()) {
 						q = root["q"];
 						if (q) {
-							if(app.rgbwwctrl.isAnimationQFull()) {
+							if (app.rgbwwctrl.isAnimationQFull()) {
 								sendApiCode(response, API_CODES::API_BAD_REQUEST, "queue is full");
 								return;
 							}
 						}
 					}
-					if(root["d"].success()) {
+					if (root["d"].success()) {
 						d = root["d"].as<int>();
 					}
 
 					c = HSVCT(h, s, v, ct);
+
 					debugapp("ApplicationWebserver::onColor HSV  H %f S %f V %f CT %i", h, s, v, ct);
-					if(cmd.equals("fade")) {
+
+					if (cmd.equals("fade")) {
 						app.rgbwwctrl.fadeHSV(c, t, d, q);
 					} else {
 						app.rgbwwctrl.setHSV(c, t, q);
@@ -727,46 +723,51 @@ void ApplicationWebserver::onColor(HttpRequest &request, HttpResponse &response)
 					sendApiCode(response, API_CODES::API_MISSING_PARAM);
 					return;
 				}
-			} else if(root["raw"].success()) {
-				if(root["raw"]["r"].success() && root["raw"]["g"].success() && root["raw"]["b"].success() && \
-					root["raw"]["ww"].success() && root["raw"]["cw"].success()) {
-						int t, r, g, b, ww, cw = 0;
-						String cmd = "solid";
-						bool q = false;
+			} else if (root["raw"].success()) {
 
-						//r = (int(constrain(root["raw"]["r"].as<float>(), 0.0, 255.0)*100) * RGBWW_PWMMAXVAL) / 100;
-						//g = (int(constrain(root["raw"]["g"].as<float>(), 0.0, 255.0)*100) * RGBWW_PWMMAXVAL)/ 100;
-						//b = (int(constrain(root["raw"]["b"].as<float>(), 0.0, 255.0)*100) * RGBWW_PWMMAXVAL)/ 100;
-						//cw = (int(constrain(root["raw"]["cw"].as<float>(), 0.0, 255.0)*100) * RGBWW_PWMMAXVAL)/ 100;
-						//ww = (int(constrain(root["raw"]["ww"].as<float>(), 0.0, 255.0)*100) * RGBWW_PWMMAXVAL)/ 100;
-						r = constrain(root["raw"]["r"].as<int>(), 0, 1023);
-						g = constrain(root["raw"]["g"].as<int>(), 0, 1023);
-						b = constrain(root["raw"]["b"].as<int>(), 0, 1023);
-						ww = constrain(root["raw"]["ww"].as<int>(), 0, 1023);
-						cw = constrain(root["raw"]["cw"].as<int>(), 0, 1023);
-						if (root["cmd"].success()) {
-							cmd = root["cmd"].asString();
-						}
-						if(root["t"].success()) {
-							t = root["t"].as<int>();
-						}
-						if(root["q"].success()) {
-							q = root["q"];
-							if (q) {
-								if(app.rgbwwctrl.isAnimationQFull()) {
-									sendApiCode(response, API_CODES::API_BAD_REQUEST, "queue is full");
-									return;
-								}
+				if (root["raw"]["r"].success()
+						&& root["raw"]["g"].success()
+						&& root["raw"]["b"].success()
+						&& root["raw"]["ww"].success()
+						&& root["raw"]["cw"].success()) {
+
+					int t, r, g, b, ww, cw = 0;
+					String cmd = "solid";
+					bool q = false;
+
+					//r = (int(constrain(root["raw"]["r"].as<float>(), 0.0, 255.0)*100) * RGBWW_PWMMAXVAL) / 100;
+					//g = (int(constrain(root["raw"]["g"].as<float>(), 0.0, 255.0)*100) * RGBWW_PWMMAXVAL)/ 100;
+					//b = (int(constrain(root["raw"]["b"].as<float>(), 0.0, 255.0)*100) * RGBWW_PWMMAXVAL)/ 100;
+					//cw = (int(constrain(root["raw"]["cw"].as<float>(), 0.0, 255.0)*100) * RGBWW_PWMMAXVAL)/ 100;
+					//ww = (int(constrain(root["raw"]["ww"].as<float>(), 0.0, 255.0)*100) * RGBWW_PWMMAXVAL)/ 100;
+					r = constrain(root["raw"]["r"].as<int>(), 0, 1023);
+					g = constrain(root["raw"]["g"].as<int>(), 0, 1023);
+					b = constrain(root["raw"]["b"].as<int>(), 0, 1023);
+					ww = constrain(root["raw"]["ww"].as<int>(), 0, 1023);
+					cw = constrain(root["raw"]["cw"].as<int>(), 0, 1023);
+					if (root["cmd"].success()) {
+						cmd = root["cmd"].asString();
+					}
+					if (root["t"].success()) {
+						t = root["t"].as<int>();
+					}
+					if (root["q"].success()) {
+						q = root["q"];
+						if (q) {
+							if (app.rgbwwctrl.isAnimationQFull()) {
+								sendApiCode(response, API_CODES::API_BAD_REQUEST, "queue is full");
+								return;
 							}
 						}
+					}
 
-						ChannelOutput output = ChannelOutput(r, g, b, ww, cw);
-						debugapp("ApplicationWebserver::onColor RAW  r:%i g:%i b:%i ww:%i cw:%i", r, g, b, ww, cw);
-						if(cmd.equals("fade")) {
-							app.rgbwwctrl.fadeRAW(output, t, q);
-						} else {
-							app.rgbwwctrl.setRAW(output, t, q);
-						}
+					ChannelOutput output = ChannelOutput(r, g, b, ww, cw);
+					debugapp("ApplicationWebserver::onColor RAW  r:%i g:%i b:%i ww:%i cw:%i", r, g, b, ww, cw);
+					if (cmd.equals("fade")) {
+						app.rgbwwctrl.fadeRAW(output, t, q);
+					} else {
+						app.rgbwwctrl.setRAW(output, t, q);
+					}
 				} else {
 					sendApiCode(response, API_CODES::API_MISSING_PARAM);
 					return;
@@ -782,7 +783,7 @@ void ApplicationWebserver::onColor(HttpRequest &request, HttpResponse &response)
 		JsonObjectStream* stream = new JsonObjectStream();
 		JsonObject& json = stream->getRoot();
 		String mode = request.getQueryParameter("mode", "hsv");
-		if(mode.equals("raw")) {
+		if (mode.equals("raw")) {
 			JsonObject& raw = json.createNestedObject("raw");
 			ChannelOutput output = app.rgbwwctrl.getCurrentOutput();
 			raw["r"] = output.r;
@@ -809,30 +810,28 @@ void ApplicationWebserver::onColor(HttpRequest &request, HttpResponse &response)
 		sendApiResponse(response, stream);
 	}
 
-
 }
 
-void ApplicationWebserver::onAnimation(HttpRequest &request, HttpResponse &response)
-{
-	if(app.ota.isProccessing()) {
+void ApplicationWebserver::onAnimation(HttpRequest &request, HttpResponse &response) {
+
+	if (!authenticated(request, response)) {
+		return;
+	}
+
+	if (app.ota.isProccessing()) {
 		sendApiCode(response, API_CODES::API_UPDATE_IN_PROGRESS);
 		return;
 	}
 
-	if(!authenticated(request, response)) return;
-
-	if(request.getRequestMethod() != RequestMethod::POST && request.getRequestMethod() != RequestMethod::GET) {
+	if (request.getRequestMethod() != RequestMethod::POST && request.getRequestMethod() != RequestMethod::GET) {
 		sendApiCode(response, API_CODES::API_BAD_REQUEST);
 		return;
 	}
 
-
 	bool error = false;
-	if (request.getRequestMethod() == RequestMethod::POST)
-	{
+	if (request.getRequestMethod() == RequestMethod::POST) {
 		String body = request.getBody();
-		if ( body == NULL || body.length() > 128)
-		{
+		if (body == NULL || body.length() > 128) {
 			sendApiCode(response, API_CODES::API_BAD_REQUEST);
 			return;
 
@@ -850,89 +849,93 @@ void ApplicationWebserver::onAnimation(HttpRequest &request, HttpResponse &respo
 		sendApiResponse(response, stream);
 	}
 
-
 }
 
+void ApplicationWebserver::onNetworks(HttpRequest &request, HttpResponse &response) {
 
-void ApplicationWebserver::onNetworks(HttpRequest &request, HttpResponse &response)
-{
+	if (!authenticated(request, response)) {
+		return;
+	}
 
-	if(!authenticated(request, response)) return;
-
-	if(app.ota.isProccessing()) {
+	if (app.ota.isProccessing()) {
 		sendApiCode(response, API_CODES::API_UPDATE_IN_PROGRESS);
 		return;
 	}
 
-	if(request.getRequestMethod() != RequestMethod::GET) {
+	if (request.getRequestMethod() != RequestMethod::GET) {
 		sendApiCode(response, API_CODES::API_BAD_REQUEST);
 		return;
 	}
+
 	JsonObjectStream* stream = new JsonObjectStream();
 	JsonObject& json = stream->getRoot();
 
 	bool error = false;
 
-	if(app.network.isScanning()) {
+	if (app.network.isScanning()) {
 		json["scanning"] = true;
 	} else {
 		json["scanning"] = false;
 		JsonArray& netlist = json.createNestedArray("available");
 		BssList networks = app.network.getAvailableNetworks();
-		for (int i = 0; i < networks.count(); i++)
-		{
-			if (networks[i].hidden) continue;
+		for (int i = 0; i < networks.count(); i++) {
+			if (networks[i].hidden)
+				continue;
 			JsonObject &item = netlist.createNestedObject();
-			item["id"] = (int)networks[i].getHashId();
+			item["id"] = (int) networks[i].getHashId();
 			item["ssid"] = networks[i].ssid;
 			item["signal"] = networks[i].rssi;
 			item["encryption"] = networks[i].getAuthorizationMethodName();
 			//limit to max 25 networks
-			if (i >= 25) break;
+			if (i >= 25)
+				break;
 		}
 	}
 	sendApiResponse(response, stream);
 }
 
-
 void ApplicationWebserver::onScanNetworks(HttpRequest &request, HttpResponse &response) {
 
-	if(app.ota.isProccessing()) {
+	if (!authenticated(request, response)) {
+		return;
+	}
+
+	if (app.ota.isProccessing()) {
 		sendApiCode(response, API_CODES::API_UPDATE_IN_PROGRESS);
 		return;
 	}
 
-	if(request.getRequestMethod() != RequestMethod::POST) {
+	if (request.getRequestMethod() != RequestMethod::POST) {
 		sendApiCode(response, API_CODES::API_BAD_REQUEST);
 		return;
 	}
-	if(!app.network.isScanning()) {
+	if (!app.network.isScanning()) {
 		app.network.scan();
 	}
 
 	sendApiCode(response, API_CODES::API_SUCCESS);
 }
 
+void ApplicationWebserver::onConnect(HttpRequest &request, HttpResponse &response) {
 
-void ApplicationWebserver::onConnect(HttpRequest &request, HttpResponse &response)
-{
-	if(!authenticated(request, response)) return;
+	if (!authenticated(request, response)) {
+		return;
+	}
 
-	if(app.ota.isProccessing()) {
+	if (app.ota.isProccessing()) {
 		sendApiCode(response, API_CODES::API_UPDATE_IN_PROGRESS);
 		return;
 	}
 
-	if(request.getRequestMethod() != RequestMethod::POST && request.getRequestMethod() != RequestMethod::GET) {
+	if (request.getRequestMethod() != RequestMethod::POST && request.getRequestMethod() != RequestMethod::GET) {
 		sendApiCode(response, API_CODES::API_BAD_REQUEST);
 		return;
 	}
 
-	if (request.getRequestMethod() == RequestMethod::POST)
-	{
+	if (request.getRequestMethod() == RequestMethod::POST) {
 
 		String body = request.getBody();
-		if ( body == NULL ) {
+		if (body == NULL) {
 
 			sendApiCode(response, API_CODES::API_BAD_REQUEST);
 			return;
@@ -944,7 +947,7 @@ void ApplicationWebserver::onConnect(HttpRequest &request, HttpResponse &respons
 		String password = "";
 		if (root["ssid"].success()) {
 			ssid = root["ssid"].asString();
-			if(root["password"].success()) {
+			if (root["password"].success()) {
 				password = root["password"].asString();
 			}
 			debugapp("ssid %s - pass %s", ssid.c_str(), password.c_str());
@@ -962,11 +965,11 @@ void ApplicationWebserver::onConnect(HttpRequest &request, HttpResponse &respons
 
 		CONNECTION_STATUS status = app.network.get_con_status();
 		json["status"] = int(status);
-		if ( status == CONNECTION_STATUS::ERR ) {
+		if (status == CONNECTION_STATUS::ERR) {
 			json["error"] = app.network.get_con_err_msg();
-		} else if (status ==  CONNECTION_STATUS::CONNECTED ) {
+		} else if (status == CONNECTION_STATUS::CONNECTED) {
 			// return connected
-			if(app.cfg.network.connection.dhcp) {
+			if (app.cfg.network.connection.dhcp) {
 				json["ip"] = WifiStation.getIP().toString();
 			} else {
 				json["ip"] = app.cfg.network.connection.ip.toString();
@@ -980,33 +983,35 @@ void ApplicationWebserver::onConnect(HttpRequest &request, HttpResponse &respons
 }
 
 void ApplicationWebserver::onSystemReq(HttpRequest &request, HttpResponse &response) {
-	if(!authenticated(request, response)) return;
 
-	if(app.ota.isProccessing()) {
+	if (!authenticated(request, response)) {
+		return;
+	}
+
+	if (app.ota.isProccessing()) {
 		sendApiCode(response, API_CODES::API_UPDATE_IN_PROGRESS);
 		return;
 	}
 
-	if(request.getRequestMethod() != RequestMethod::POST) {
-			sendApiCode(response, API_CODES::API_BAD_REQUEST);
-			return;
+	if (request.getRequestMethod() != RequestMethod::POST) {
+		sendApiCode(response, API_CODES::API_BAD_REQUEST);
+		return;
 	}
 
 	bool error = false;
 	String body = request.getBody();
-	if ( body == NULL )
-	{
+	if (body == NULL) {
 		sendApiCode(response, API_CODES::API_BAD_REQUEST);
 		return;
 	} else {
 		DynamicJsonBuffer jsonBuffer;
 		JsonObject& root = jsonBuffer.parseObject(body);
 
-		if(root["cmd"].success()) {
+		if (root["cmd"].success()) {
 			String cmd = root["cmd"].asString();
 			if (cmd.equals("debug")) {
-				if(root["enable"].success()) {
-					if(root["enable"]) {
+				if (root["enable"].success()) {
+					if (root["enable"]) {
 						Serial.systemDebugOutput(true);
 					} else {
 						Serial.systemDebugOutput(false);
@@ -1014,11 +1019,11 @@ void ApplicationWebserver::onSystemReq(HttpRequest &request, HttpResponse &respo
 				} else {
 					error = true;
 				}
-			} else if(!app.delayedCMD(cmd, 1500)) {
+			} else if (!app.delayedCMD(cmd, 1500)) {
 				error = true;
 			}
 
-		} else  {
+		} else {
 			error = true;
 		}
 
@@ -1032,23 +1037,24 @@ void ApplicationWebserver::onSystemReq(HttpRequest &request, HttpResponse &respo
 }
 
 void ApplicationWebserver::onUpdate(HttpRequest &request, HttpResponse &response) {
-	if(!authenticated(request, response)) return;
 
-	if(request.getRequestMethod() != RequestMethod::POST && request.getRequestMethod() != RequestMethod::GET) {
+	if (!authenticated(request, response)) {
+		return;
+	}
+
+	if (request.getRequestMethod() != RequestMethod::POST
+			&& request.getRequestMethod() != RequestMethod::GET) {
 		sendApiCode(response, API_CODES::API_BAD_REQUEST);
 		return;
 	}
 
-
-	if (request.getRequestMethod() == RequestMethod::POST)
-	{
-		if(app.ota.isProccessing()) {
+	if (request.getRequestMethod() == RequestMethod::POST) {
+		if (app.ota.isProccessing()) {
 			sendApiCode(response, API_CODES::API_UPDATE_IN_PROGRESS);
 			return;
 		}
 
-		if (request.getBody() == NULL)
-		{
+		if (request.getBody() == NULL) {
 			sendApiCode(response, API_CODES::API_BAD_REQUEST);
 			return;
 		}
@@ -1057,9 +1063,9 @@ void ApplicationWebserver::onUpdate(HttpRequest &request, HttpResponse &response
 		String romurl, spiffsurl;
 		bool error = false;
 
-		if(root["rom"].success() && root["spiffs"].success()) {
+		if (root["rom"].success() && root["spiffs"].success()) {
 
-			if(root["rom"]["url"].success() && root["spiffs"]["url"].success()) {
+			if (root["rom"]["url"].success() && root["spiffs"]["url"].success()) {
 				romurl = root["rom"]["url"].asString();
 				spiffsurl = root["spiffs"]["url"].asString();
 			} else {
@@ -1069,7 +1075,7 @@ void ApplicationWebserver::onUpdate(HttpRequest &request, HttpResponse &response
 		} else {
 			error = true;
 		}
-		if(error) {
+		if (error) {
 			sendApiCode(response, API_CODES::API_MISSING_PARAM);
 			return;
 		} else {
@@ -1088,7 +1094,7 @@ void ApplicationWebserver::onUpdate(HttpRequest &request, HttpResponse &response
 
 //simple call-response to check if we can reach server
 void ApplicationWebserver::onPing(HttpRequest &request, HttpResponse &response) {
-	if(request.getRequestMethod() != RequestMethod::GET) {
+	if (request.getRequestMethod() != RequestMethod::GET) {
 		sendApiCode(response, API_CODES::API_BAD_REQUEST);
 		return;
 	}
@@ -1106,5 +1112,4 @@ void ApplicationWebserver::generate204(HttpRequest &request, HttpResponse &respo
 	response.setContentType("text/plain");
 	response.setStatusCode(204, "NO CONTENT");
 }
-
 

@@ -27,7 +27,7 @@
 #define APP_SETTINGS_FILE ".cfg"
 #define CFG_VERSION "1"
 
-struct  ApplicationSettings {
+struct ApplicationSettings {
 	struct network {
 		struct connection {
 			String mdnshostname;
@@ -38,11 +38,11 @@ struct  ApplicationSettings {
 		};
 
 		struct mqtt {
-			bool	enabled;
-			String 	server;
-			int		port;
-			String	username;
-			String 	password;
+			bool enabled;
+			String server;
+			int port;
+			String username;
+			String password;
 		};
 
 		struct ap {
@@ -88,8 +88,8 @@ struct  ApplicationSettings {
 	};
 
 	struct general {
-		bool	api_secured = DEFAULT_API_SECURED;
-		String	api_password = DEFAULT_API_PASSWORD;
+		bool api_secured = DEFAULT_API_SECURED;
+		String api_password = DEFAULT_API_PASSWORD;
 		String otaurl = DEFAULT_OTA_URL;
 	};
 
@@ -98,19 +98,17 @@ struct  ApplicationSettings {
 	color color;
 	String configversion = CFG_VERSION;
 
-
-	void load(bool print = false)
-	{
+	void load(bool print = false) {
 		DynamicJsonBuffer jsonBuffer;
-		if (exist())
-		{
+		if (exist()) {
 			int size = fileGetSize(APP_SETTINGS_FILE);
 			char* jsonString = new char[size + 1];
 			fileGetContent(APP_SETTINGS_FILE, jsonString, size + 1);
 			JsonObject& root = jsonBuffer.parseObject(jsonString);
 
 			// connection
-			network.connection.mdnshostname = root["network"]["connection"]["hostname"].asString();
+			network.connection.mdnshostname =
+					root["network"]["connection"]["hostname"].asString();
 			network.connection.dhcp = root["network"]["connection"]["dhcp"];
 			network.connection.ip = root["network"]["connection"]["ip"].asString();
 			network.connection.netmask = root["network"]["connection"]["netmask"].asString();
@@ -119,14 +117,14 @@ struct  ApplicationSettings {
 			// accesspoint
 			network.ap.secured = root["network"]["ap"]["secured"];
 			network.ap.ssid = root["network"]["ap"]["ssid"].asString();
-			network.ap.password  = root["network"]["ap"]["password"].asString();
+			network.ap.password = root["network"]["ap"]["password"].asString();
 
 			// mqtt
 			network.mqtt.enabled = root["network"]["mqtt"]["enabled"];
 			network.mqtt.server = root["network"]["mqtt"]["server"].asString();
 			network.mqtt.port = root["network"]["mqtt"]["port"];
-			network.mqtt.username  = root["network"]["mqtt"]["username"].asString();
-			network.mqtt.password  = root["network"]["mqtt"]["password"].asString();
+			network.mqtt.username = root["network"]["mqtt"]["username"].asString();
+			network.mqtt.password = root["network"]["mqtt"]["password"].asString();
 
 			// color
 			color.outputmode = root["color"]["outputmode"];
@@ -163,8 +161,7 @@ struct  ApplicationSettings {
 
 	}
 
-	void save(bool print = false)
-	{
+	void save(bool print = false) {
 		DynamicJsonBuffer jsonBuffer;
 		JsonObject& root = jsonBuffer.createObject();
 
@@ -218,8 +215,6 @@ struct  ApplicationSettings {
 		g["otaurl"] = general.otaurl;
 		g["config_version"] = CFG_VERSION;
 
-
-
 		String rootString;
 		if (print) {
 			root.prettyPrintTo(Serial);
@@ -229,7 +224,9 @@ struct  ApplicationSettings {
 
 	}
 
-	bool exist() { return fileExist(APP_SETTINGS_FILE); }
+	bool exist() {
+		return fileExist(APP_SETTINGS_FILE);
+	}
 
 	void reset() {
 		if (exist()) {
@@ -237,7 +234,5 @@ struct  ApplicationSettings {
 		}
 	}
 };
-
-
 
 #endif /* INCLUDE_APPSETTINGS_H_ */

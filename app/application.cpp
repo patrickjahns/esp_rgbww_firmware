@@ -24,7 +24,6 @@
 
 Application app;
 
-
 // Sming Framework INIT method - called during boot
 void init() {
 
@@ -42,9 +41,6 @@ void init() {
 	System.onReady(SystemReadyDelegate(&Application::startServices, &app));
 }
 
-
-
-
 void Application::init() {
 
 	Serial.printf("RGBWW Controller v %s\r\n", fw_version);
@@ -53,18 +49,16 @@ void Application::init() {
 
 	// load boot information
 	uint8 bootmode, bootslot;
-	if(rboot_get_last_boot_mode(&bootmode)) {
-		if(bootmode == MODE_TEMP_ROM) {
+	if (rboot_get_last_boot_mode(&bootmode)) {
+		if (bootmode == MODE_TEMP_ROM) {
 			debugapp("Application::init - booting after OTA");
-		}
-		else
-		{
+		} else {
 			debugapp("Application::init - normal boot");
 		}
 		_bootmode = bootmode;
 	}
 
-	if(rboot_get_last_boot_rom(&bootslot)) {
+	if (rboot_get_last_boot_rom(&bootslot)) {
 		_romslot = bootslot;
 	}
 
@@ -72,7 +66,7 @@ void Application::init() {
 	mountfs(getRomSlot());
 
 	// check if we need to reset settings
-	if(digitalRead(CLEAR_PIN) < 1) {
+	if (digitalRead(CLEAR_PIN) < 1) {
 		Serial.println("CLR button low - resetting settings");
 		cfg.reset();
 		network.forget_wifi();
@@ -102,24 +96,21 @@ void Application::init() {
 }
 
 // Will be called when system initialization was completed
-void Application::startServices()
-{
+void Application::startServices() {
 	debugapp("Application::startServices");
 	rgbwwctrl.start();
 	webserver.start();
 
 }
 
-
 void Application::restart() {
 	Serial.println("Restarting");
-	if(network.isApActive()) {
+	if (network.isApActive()) {
 		network.stopAp();
 		_systimer.initializeMs(500, TimerDelegate(&Application::restart, this)).startOnce();
 	}
 	System.restart();
 }
-
 
 void Application::reset() {
 	debugapp("Application::reset");
@@ -133,20 +124,20 @@ void Application::reset() {
 
 bool Application::delayedCMD(String cmd, int delay) {
 	debugapp("Application::delayedCMD cmd: %s - delay: %i", cmd.c_str(), delay);
-	if(cmd.equals("reset")) {
+	if (cmd.equals("reset")) {
 		_systimer.initializeMs(delay, TimerDelegate(&Application::reset, this)).startOnce();
-	} else if(cmd.equals("restart")) {
+	} else if (cmd.equals("restart")) {
 		_systimer.initializeMs(delay, TimerDelegate(&Application::restart, this)).startOnce();
-	} else if(cmd.equals("stopap")) {
+	} else if (cmd.equals("stopap")) {
 		network.stopAp(2000);
 	} else if (cmd.equals("forget_wifi")) {
 		_systimer.initializeMs(delay, TimerDelegate(&AppWIFI::forget_wifi, &network)).startOnce();
-	} else if(cmd.equals("test_channels")){
+	} else if (cmd.equals("test_channels")) {
 		rgbwwctrl.test_channels();
-    } else if(cmd.equals("switch_rom")){
+	} else if (cmd.equals("switch_rom")) {
 		switchRom();
 		_systimer.initializeMs(delay, TimerDelegate(&Application::restart, this)).startOnce();
-    } else {
+	} else {
 		return false;
 	}
 	return true;
@@ -155,10 +146,12 @@ bool Application::delayedCMD(String cmd, int delay) {
 void Application::mountfs(int slot) {
 	debugapp("Application::mountfs rom slot: %i", slot);
 	if (slot == 0) {
-		debugapp("Application::mountfs trying to mount spiffs at %x, length %d", RBOOT_SPIFFS_0 + 0x40200000, SPIFF_SIZE);
+		debugapp("Application::mountfs trying to mount spiffs at %x, length %d",
+				RBOOT_SPIFFS_0 + 0x40200000, SPIFF_SIZE);
 		spiffs_mount_manual(RBOOT_SPIFFS_0 + 0x40200000, SPIFF_SIZE);
 	} else {
-		debugapp("Application::mountfs trying to mount spiffs at %x, length %d", RBOOT_SPIFFS_1 + 0x40200000, SPIFF_SIZE);
+		debugapp("Application::mountfs trying to mount spiffs at %x, length %d",
+				RBOOT_SPIFFS_1 + 0x40200000, SPIFF_SIZE);
 		spiffs_mount_manual(RBOOT_SPIFFS_1 + 0x40200000, SPIFF_SIZE);
 	}
 	_fs_mounted = true;
@@ -173,6 +166,10 @@ void Application::umountfs() {
 void Application::switchRom() {
 	debugapp("Application::switchRom");
 	int slot = getRomSlot();
-	if (slot == 0) slot = 1; else slot = 0;
+	if (slot == 0) {
+		slot = 1;
+	} else {
+		slot = 0;
+	}
 	rboot_set_current_rom(slot);
 }

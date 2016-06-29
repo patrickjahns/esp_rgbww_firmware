@@ -26,13 +26,19 @@ void ApplicationOTA::start(String romurl, String spiffsurl) {
 	Serial.println("Starting OTA ...");
 	reset();
 	status = OTASTATUS::OTA_PROCESSING;
-	if(otaUpdater) delete otaUpdater;
+	if (otaUpdater) {
+		delete otaUpdater;
+	}
 	otaUpdater = new rBootHttpUpdate();
 
 	rboot_config bootconf = rboot_get_config();
 	rom_slot = app.getRomSlot();
 
-	if (rom_slot == 0) rom_slot = 1; else rom_slot = 0;
+	if (rom_slot == 0) {
+		rom_slot = 1;
+	} else {
+		rom_slot = 0;
+	}
 
 	otaUpdater->addItem(bootconf.roms[rom_slot], romurl);
 
@@ -49,7 +55,8 @@ void ApplicationOTA::start(String romurl, String spiffsurl) {
 void ApplicationOTA::reset() {
 	debugapp("ApplicationOTA::reset");
 	status = OTASTATUS::OTA_NOT_UPDATING;
-	if(otaUpdater) delete otaUpdater;
+	if (otaUpdater)
+		delete otaUpdater;
 }
 
 void ApplicationOTA::beforeOTA() {
@@ -61,7 +68,7 @@ void ApplicationOTA::beforeOTA() {
 
 void ApplicationOTA::afterOTA() {
 	debugapp("ApplicationOTA::afterOTA");
-	if(status == OTASTATUS::OTA_SUCCESS_REBOOT) {
+	if (status == OTASTATUS::OTA_SUCCESS_REBOOT) {
 
 		// unmount old Filesystem - mount new filesystem
 		app.umountfs();
@@ -83,11 +90,11 @@ void ApplicationOTA::afterOTA() {
 
 void ApplicationOTA::rBootCallback(bool result) {
 	debugapp("ApplicationOTA::rBootCallback");
-	if(result == true) {
+	if (result == true) {
 
 		// set new temporary boot rom
 		debugapp("ApplicationOTA::rBootCallback temp boot %i", rom_slot);
-		if(rboot_set_temp_rom(rom_slot)) {
+		if (rboot_set_temp_rom(rom_slot)) {
 			status = OTASTATUS::OTA_SUCCESS_REBOOT;
 			Serial.println("OTA successful");
 		} else {
@@ -109,7 +116,7 @@ void ApplicationOTA::rBootCallback(bool result) {
 void ApplicationOTA::checkAtBoot() {
 	debugapp("ApplicationOTA::checkAtBoot");
 	status = loadStatus();
-	if(app.isTempBoot()) {
+	if (app.isTempBoot()) {
 		debugapp("ApplicationOTA::checkAtBoot permanently enabling rom %i", app.getRomSlot());
 		rboot_set_current_rom(app.getRomSlot());
 		saveStatus(OTASTATUS::OTA_NOT_UPDATING);
@@ -128,18 +135,16 @@ void ApplicationOTA::saveStatus(OTASTATUS status) {
 
 OTASTATUS ApplicationOTA::loadStatus() {
 	debugapp("ApplicationOTA::loadStatus");
-	if(fileExist(OTA_STATUS_FILE)) {
+	if (fileExist(OTA_STATUS_FILE)) {
 		DynamicJsonBuffer jsonBuffer;
 		int size = fileGetSize(OTA_STATUS_FILE);
 		char* jsonString = new char[size + 1];
 		fileGetContent(OTA_STATUS_FILE, jsonString, size + 1);
 		JsonObject& root = jsonBuffer.parseObject(jsonString);
-		OTASTATUS status = (OTASTATUS)root["status"].as<int>();
+		OTASTATUS status = (OTASTATUS) root["status"].as<int>();
 		delete[] jsonString;
 		return status;
-	}
-	else
-	{
+	} else {
 		return OTASTATUS::OTA_NOT_UPDATING;
 	}
 }

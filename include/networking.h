@@ -22,8 +22,6 @@
 #ifndef APP_NETWORKING_H_
 #define APP_NETWORKING_H_
 
-
-
 enum CONNECTION_STATUS {
 	IDLE = 0,
 	CONNECTING = 1,
@@ -35,13 +33,15 @@ class AppWIFI {
 
 public:
 	AppWIFI();
-	virtual ~AppWIFI(){};
+	virtual ~AppWIFI() {
+	}
+	;
 
 	void init();
 
 	void connect(String ssid, String pass, bool new_con = false);
 	void connect(String ssid, bool new_con = false);
-	inline CONNECTION_STATUS get_con_status() { return _client_status; };
+	inline CONNECTION_STATUS get_con_status() { return _client_status; }	;
 	inline String get_con_err_msg() { return _client_err_msg; };
 
 	void startAp();
@@ -60,7 +60,7 @@ private:
 	bool _scanning;
 	bool _dns_active;
 	bool _new_connection;
-	String	_client_err_msg;
+	String _client_err_msg;
 	String _tmp_ssid;
 	String _tmp_password;
 	Timer _timer;

@@ -28,35 +28,29 @@ void APPLedCtrl::init() {
 	setup();
 	color.load();
 	debugapp("H: %i | s: %i | v: %i | ct: %i", color.h, color.s, color.v, color.ct);
-    HSVCT s = HSVCT(color.h, color.s, 0, color.ct);
+	HSVCT s = HSVCT(color.h, color.s, 0, color.ct);
 	HSVCT c = HSVCT(color.h, color.s, color.v, color.ct);
-    fadeHSV(s, c, 700); //fade to color in 700ms
+	fadeHSV(s, c, 700); //fade to color in 700ms
 }
 
 void APPLedCtrl::setup() {
 	debugapp("APPLedCtrl::setup");
 
-    colorutils.setBrightnessCorrection(app.cfg.color.brightness.red,
-    		app.cfg.color.brightness.green,
-			app.cfg.color.brightness.blue,
-			app.cfg.color.brightness.ww,
-			app.cfg.color.brightness.cw);
-    colorutils.setHSVcorrection(app.cfg.color.hsv.red,
-    		app.cfg.color.hsv.yellow,
-			app.cfg.color.hsv.green,
-			app.cfg.color.hsv.cyan,
-			app.cfg.color.hsv.blue,
-			app.cfg.color.hsv.magenta);
+	colorutils.setBrightnessCorrection(app.cfg.color.brightness.red,
+			app.cfg.color.brightness.green, app.cfg.color.brightness.blue,
+			app.cfg.color.brightness.ww, app.cfg.color.brightness.cw);
+	colorutils.setHSVcorrection(app.cfg.color.hsv.red, app.cfg.color.hsv.yellow,
+			app.cfg.color.hsv.green, app.cfg.color.hsv.cyan,
+			app.cfg.color.hsv.blue, app.cfg.color.hsv.magenta);
 
-    colorutils.setColorMode((RGBWW_COLORMODE)app.cfg.color.outputmode);
-    colorutils.setHSVmodel((RGBWW_HSVMODEL)app.cfg.color.hsv.model);
-
+	colorutils.setColorMode((RGBWW_COLORMODE) app.cfg.color.outputmode);
+	colorutils.setHSVmodel((RGBWW_HSVMODEL) app.cfg.color.hsv.model);
 
 }
 
 void APPLedCtrl::show_led() {
 	//int curmicros = millis();
-	if(!show()){
+	if (!show()) {
 		//debugapp("start %i end: %i, diff %i", curmicros, millis(), millis() - curmicros);
 	}
 
@@ -82,7 +76,7 @@ void APPLedCtrl::color_save() {
 	color.save();
 }
 
-void  APPLedCtrl::color_reset() {
+void APPLedCtrl::color_reset() {
 	debugapp("APPLedCtrl::reset_color");
 	color.h = 0;
 	color.s = 0;

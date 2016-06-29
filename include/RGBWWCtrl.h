@@ -35,7 +35,6 @@
 #define DEFAULT_CONNECTION_RETRIES 10
 #define DEFAULT_OTA_URL "http://patrickjahns.github.io/esp_rgbww_firmware/release/version.json"
 
-
 // RGBWW related
 #define DEFAULT_COLORTEMP_WW 2700
 #define DEFAULT_COLORTEMP_CW 6000
@@ -48,7 +47,6 @@
 
 #define PWM_FREQUENCY 339
 #define RGBWW_USE_ESP_HWPWM
-
 
 // Debugging
 #define DEBUG_APP 1
@@ -64,7 +62,5 @@
 #include <networking.h>
 #include <webserver.h>
 #include <application.h>
-
-
 
 #endif /* RGBWWCTRL_H_ */

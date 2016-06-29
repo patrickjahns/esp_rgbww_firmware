@@ -24,19 +24,15 @@
 
 #define APP_COLOR_FILE ".color"
 
-struct ColorStorage
-{
+struct ColorStorage {
 	int h = 0;
 	int s = 0;
 	int v = 0;
 	int ct = 0;
 
-
-	void load(bool print = false)
-	{
-		StaticJsonBuffer<72> jsonBuffer;
-		if (exist())
-		{
+	void load(bool print = false) {
+		StaticJsonBuffer < 72 > jsonBuffer;
+		if (exist()) {
 			int size = fileGetSize(APP_COLOR_FILE);
 			char* jsonString = new char[size + 1];
 			fileGetContent(APP_COLOR_FILE, jsonString, size + 1);
@@ -52,8 +48,7 @@ struct ColorStorage
 		}
 	}
 
-	void save(bool print = false)
-	{
+	void save(bool print = false) {
 		DynamicJsonBuffer jsonBuffer;
 		JsonObject& root = jsonBuffer.createObject();
 		root["h"] = h;
@@ -67,13 +62,14 @@ struct ColorStorage
 		root.printTo(rootString);
 		fileSetContent(APP_COLOR_FILE, rootString);
 	}
-	bool exist() { return fileExist(APP_COLOR_FILE); }
+	bool exist() {
+		return fileExist(APP_COLOR_FILE);
+	}
 };
 
 typedef Delegate<bool(void)> ledctrlDelegate;
 
-class APPLedCtrl: public RGBWWLed
-{
+class APPLedCtrl: public RGBWWLed {
 
 public:
 	void init();
@@ -91,7 +87,6 @@ public:
 private:
 	ColorStorage color;
 	Timer ledTimer;
-
 
 };
 
