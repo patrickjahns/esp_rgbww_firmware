@@ -324,7 +324,7 @@ void ApplicationWebserver::onConfig(HttpRequest &request, HttpResponse &response
 							error_msg = "missing password for securing ap";
 						}
 					} else if (root["network"]["ap"]["secured"] != app.cfg.network.ap.secured) {
-						root["network"]["ap"]["secured"] = app.cfg.network.ap.secured;
+						app.cfg.network.ap.secured = root["network"]["ap"]["secured"];
 						ap_updated = true;
 					}
 				}
