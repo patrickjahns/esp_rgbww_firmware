@@ -1,6 +1,13 @@
 ## Changelog
 
-0.3.0 (10.05.2015)
+0.3.1 (29.06.2016)
+  * fix error when using `/system` endpoint
+  * fix reconnection issues when AP is not reachable (i.e. after powerloss)
+  * include latest RGBWWLed Library (0.8.1)
+  * fix `/color` with `cmd:solid`
+  * added `from` to `/color` RAW/HSV - fade from a specified color to the desired color
+
+0.3.0 (10.05.2016)
   * improved OTA method
   * fix `/ping` endpoint
   * fix some issues with saving api security state

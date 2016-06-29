@@ -49,7 +49,7 @@
 #define RGBWW_USE_ESP_HWPWM
 
 // Debugging
-#define DEBUG_APP 1
+#define DEBUG_APP 0
 
 //includes
 #include <user_config.h>
